@@ -39,7 +39,9 @@ export default function HomePage() {
   const rails = getHomeRails();
   const brands = getTopBrands(14);
   const fmt = (n) => n.toLocaleString("en-IN");
-  const count = (slug) => categories.find((c) => c.slug === slug)?.count ?? 0;
+  // Online-sellable listings only (pesticides, urea, animal-husbandry goods
+  // etc. are store-and-quotation items — see app/config/sale-restrictions.js).
+  const count = (slug) => categories.find((c) => c.slug === slug)?.onlineCount ?? 0;
 
   // Hero scenes are hand-made flat illustrations (public/assets/marketplace).
   const slides = [
@@ -49,8 +51,8 @@ export default function HomePage() {
       eyebrow: SITE.tagline,
       eyebrowShort: "Agri marketplace",
       title: "Every farm input, one marketplace",
-      text: `${fmt(stats.total)} listings from ${fmt(stats.brands)} brands across seeds, crop protection, crop nutrition, farm machinery and animal husbandry — every pack size, one checkout.`,
-      textShort: `${fmt(stats.total)} listings · ${fmt(stats.brands)} brands`,
+      text: `${fmt(stats.onlineTotal)} listings to buy online from ${fmt(stats.onlineBrands)} brands — seeds, traps & lures, crop nutrition and farm machinery in every pack size, one checkout. Pesticides, urea and animal-husbandry products: at our Jaipur store and by quotation.`,
+      textShort: `${fmt(stats.onlineTotal)} listings online · ${fmt(stats.onlineBrands)} brands`,
       cta: "Shop all categories",
       href: "/products",
       secondary: { label: "Seeds", href: "/c/seeds" },
@@ -58,11 +60,11 @@ export default function HomePage() {
     {
       id: "protect",
       image: "/assets/marketplace/hero-cotton-sprayer.svg",
-      eyebrow: `${fmt(count("crop-protection"))} crop protection · ${fmt(count("crop-nutrition"))} crop nutrition`,
+      eyebrow: `${fmt(count("crop-protection"))} crop protection · ${fmt(count("crop-nutrition"))} crop nutrition online`,
       eyebrowShort: "Protect & nourish",
-      title: "Stop pests and disease, feed the crop",
-      text: "Insecticides, fungicides, herbicides, bio-controls and fertilisers from leading brands — filter by brand, crop and pack size.",
-      textShort: "Shop by brand, crop and pack size.",
+      title: "Protect the crop, feed the soil",
+      text: "Traps & lures, animal repellents, bio-fertilisers, biostimulants and fertilisers online — filter by brand, crop and pack size. Pesticides and growth regulators are sold at our Jaipur store and through the institutional desk.",
+      textShort: "Traps, lures, repellents and crop nutrition online.",
       cta: "Shop crop protection",
       href: "/c/crop-protection",
       secondary: { label: "Crop nutrition", href: "/c/crop-nutrition" },
@@ -181,7 +183,7 @@ export default function HomePage() {
           <ul className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
             {[
               { icon: "shield", title: "Genuine products", text: "Genuine products from leading brands and Surya's own range — every listing names the brand, pack size and SKU, so you know exactly what you are buying." },
-              { icon: "label", title: "Licensed agro-inputs marketplace", text: "Surya Enterprises is licensed to sell agro-inputs. Crop-protection products ship in sealed packs; use only as directed on the CIB&RC-approved label." },
+              { icon: "label", title: "Licensed agro-inputs marketplace", text: "Surya Enterprises is licensed to sell agro-inputs. Pesticides, urea and animal-husbandry products are sold only at our Jaipur store and through the institutional desk — never online; everything we ship comes in sealed manufacturer packs." },
               { icon: "factory", title: "Surya's own range", text: "Products made by Surya Enterprises are marked “Manufacturer direct” on their page; everything else is a genuine branded pack sold by Surya." },
               { icon: "truck", title: "Pan-India dispatch", text: SITE.delivery.dispatchClaim },
               { icon: "upi", title: "Secure UPI payments", text: "Pay with any UPI app through PayU. Your UPI PIN is never entered on this site and no card details are stored." },

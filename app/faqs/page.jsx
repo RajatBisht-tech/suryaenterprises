@@ -96,7 +96,7 @@ const sections = [
           <p>{shipping.serviceableAreas} You can check your PIN on any product page.</p>
         </Faq>
         <Faq q="How soon will my order ship?">
-          <p>Orders are typically dispatched within {shipping.dispatchWindow} of payment confirmation. Transit time depends on the destination; pesticide consignments travel by surface transport only.</p>
+          <p>Orders are typically dispatched within {shipping.dispatchWindow} of payment confirmation. Transit time depends on the destination; bulky items such as sprayers and tarpaulins travel by surface transport.</p>
         </Faq>
         <Faq q="What are the delivery charges?">
           <p>{shipping.charges}</p>
@@ -137,6 +137,40 @@ const sections = [
     ),
   },
   {
+    id: "restricted",
+    title: "Products not sold online",
+    content: (
+      <div className="-mt-2">
+        <Faq q="Why can't I buy pesticides or urea online?">
+          <p>
+            Pesticides and agrochemicals (insecticides, fungicides, herbicides, bio-controls and plant growth regulators) are
+            regulated goods under the Insecticides Act, 1968, and urea and other subsidised fertilisers may be sold only
+            through licensed outlets under the Fertiliser (Control) Order, 1985. Payment gateways also list pesticides and
+            agricultural chemicals among regulated categories. We therefore do not sell them through the website: they are
+            marked “Not for online sale”, cannot be added to the cart, and are available at our Jaipur store (
+            {SITE.offices[0].address}) and through the <Link href="/products/institutional">institutional desk</Link> against a
+            valid requirement.
+          </p>
+        </Faq>
+        <Faq q="Which other products are store-only?">
+          <p>
+            Animal-husbandry products (cattle feed, milking equipment, poultry and fish care), adjuvants and other
+            agricultural chemicals, ammonium-nitrate products and knives are also sold only at the store and by quotation.
+            Seeds, traps &amp; lures, animal repellents, fertilisers, bio-fertilisers, biostimulants and farm machinery can
+            be bought online.
+          </p>
+        </Faq>
+        <Faq q="How do I buy a store-only product?">
+          <p>
+            Open the product page and use <strong>Institutional desk</strong> to send an enquiry quoting the SKU, call{" "}
+            {SITE.helpline.display} ({SITE.helpline.hours}), or visit the Jaipur store. Pesticides are handed over only in
+            sealed manufacturer packs with the CIB&amp;RC-approved label.
+          </p>
+        </Faq>
+      </div>
+    ),
+  },
+  {
     id: "product-safety",
     title: "Product safety",
     content: (
@@ -158,7 +192,7 @@ const sections = [
           <p>Follow the first-aid instructions on the label, and call a doctor or go to the nearest hospital immediately, taking the label with you. The AIIMS Poison Information Centre helpline is 1800-116-117.</p>
         </Faq>
         <Faq q="Can I resell products bought here?">
-          <p>Resale of pesticides requires a licence from your State Agriculture Department. Buy for resale only if you hold one. See our <Link href="/terms">Terms of Use</Link>.</p>
+          <p>Resale of seeds, fertilisers and pesticides requires the relevant licence from your State Agriculture Department. Buy for resale only if you hold one. See our <Link href="/terms">Terms of Use</Link>.</p>
         </Faq>
       </div>
     ),
@@ -170,7 +204,7 @@ export default function FaqsPage() {
     <PolicyLayout
       eyebrow="Help"
       title="Frequently Asked Questions"
-      intro="Quick answers about ordering, paying, delivery, returns and product safety on the Surya Enterprises marketplace."
+      intro="Quick answers about ordering, paying, delivery, returns, products that are sold only at our store, and product safety on the Surya Enterprises marketplace."
       sections={sections}
       related={[
         { name: "Track order", href: "/track-order" },

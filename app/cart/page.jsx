@@ -107,7 +107,7 @@ export default function CartPage() {
                         <span className="text-lg font-bold text-ink">{formatPrice(p.price * quantity)}</span>
                         {quantity > 1 && <span className="text-xs text-ink-2">{formatPrice(p.price)} each</span>}
                       </div>
-                      <StockBadge stock={p.stock} />
+                      <StockBadge stock={p.stock} restriction={p.onlineSale === false ? p.restriction ?? {} : null} />
                       <div className="mt-2 flex flex-wrap gap-x-3 text-[13px] font-semibold uppercase tracking-wide">
                         <button
                           type="button"

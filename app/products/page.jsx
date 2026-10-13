@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 import Breadcrumbs from "../components/shop/Breadcrumbs";
+import { StoreOnlyTag } from "../components/shop/CategoryMegaMenu";
 import ProductCard from "../components/shop/ProductCard";
 import { ICONS } from "../components/shop/icons";
 import { getCatalogStats, getNavCategories, getTopPicks } from "./data/catalog.server";
@@ -27,7 +28,9 @@ export default function ProductsPage() {
           Five categories, <span className="font-semibold text-ink tabular-nums">{fmt(stats.subcategories)}</span> subcategories and{" "}
           <span className="font-semibold text-ink tabular-nums">{fmt(stats.total)}</span> listings from{" "}
           <span className="font-semibold text-ink tabular-nums">{fmt(stats.brands)}</span> brands — genuine products from leading brands and
-          Surya&apos;s own range.
+          Surya&apos;s own range. <span className="font-semibold text-ink tabular-nums">{fmt(stats.onlineTotal)}</span> listings can be bought online;
+          pesticides, urea, animal-husbandry products and other regulated goods are marked “Not for online sale” and are available at our Jaipur
+          store and by quotation.
         </p>
       </header>
 
@@ -47,9 +50,10 @@ export default function ProductsPage() {
                     <span className="flex items-center gap-1.5">
                       {Icon && <Icon className="h-4 w-4 shrink-0 text-brand" strokeWidth={1.75} aria-hidden="true" />}
                       <span className="font-display text-lg font-extrabold leading-tight text-ink group-hover:text-brand">{c.name}</span>
+                      {c.storeOnly && <StoreOnlyTag />}
                     </span>
                     <span className="mt-0.5 block text-xs text-ink-2">
-                      {fmt(c.count)} listings · {c.subcategoryCount} subcategories · {c.brandCount} brands
+                      {c.storeOnly ? "Store & quotation only" : `${fmt(c.onlineCount)} online`} · {fmt(c.count)} listings · {c.subcategoryCount} subcategories · {c.brandCount} brands
                     </span>
                   </span>
                 </Link>
@@ -58,8 +62,11 @@ export default function ProductsPage() {
                   <ul className="mt-3 space-y-0.5 text-[13px]">
                     {c.subcategories.slice(0, 6).map((s) => (
                       <li key={s.slug}>
-                        <Link href={`/c/${c.slug}/${s.slug}`} className="flex items-center justify-between rounded px-1 py-0.5 text-ink hover:bg-brand-tint hover:text-brand">
-                          <span className="truncate">{s.name}</span>
+                        <Link href={`/c/${c.slug}/${s.slug}`} className="flex items-center justify-between gap-2 rounded px-1 py-0.5 text-ink hover:bg-brand-tint hover:text-brand">
+                          <span className="flex min-w-0 items-center gap-1.5">
+                            <span className="truncate">{s.name}</span>
+                            {s.storeOnly && !c.storeOnly && <StoreOnlyTag />}
+                          </span>
                           <span className="text-xs tabular-nums text-ink-3">{s.count}</span>
                         </Link>
                       </li>

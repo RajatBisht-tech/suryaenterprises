@@ -72,7 +72,9 @@ export function buildProductMatcher(products) {
     if (!product) return null;
     const delta = (target - paise(product.price)) / 100;
     return { sku: product.sku, name: product.name, price: product.price, image: product.image, unit: product.unit,
-      category: product.category, brand: product.brand, delta, differencePercent: Math.round(Math.abs(delta) / Number(amount) * 10000) / 100,
+      category: product.category, brand: product.brand, onlineSale: product.onlineSale !== false,
+      ...(product.restriction ? { restriction: product.restriction } : {}),
+      delta, differencePercent: Math.round(Math.abs(delta) / Number(amount) * 10000) / 100,
       exact: delta === 0 };
   };
   return { match, bySku };

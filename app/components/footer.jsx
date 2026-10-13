@@ -4,15 +4,18 @@ import {
 } from "lucide-react";
 import { COMPANY_PROFILE } from "../config/company-profile";
 import { POLICY_LINKS } from "../config/policy-links";
+import { SALE_RESTRICTION_SHORT } from "../config/sale-restrictions";
 import { SITE, mailHref, telHref, whatsappHref } from "../config/site";
-import { CATEGORIES } from "../config/taxonomy";
+import { getNavCategories } from "../products/data/catalog.server";
 import BrandLogo from "./shop/BrandLogo";
 import FooterPartnersStrip from "./shop/FooterPartnersStrip";
 import FooterColumn from "./shop/FooterColumn";
 import NewsletterForm from "./shop/NewsletterForm";
 
-const SHOP_LINKS = [
-  ...CATEGORIES.map((c) => ({ name: c.name, href: `/c/${c.slug}` })),
+// Categories whose every listing is "Not for online sale" (e.g. animal
+// husbandry) are tagged "Store only" — counted from the live catalogue.
+const shopLinks = () => [
+  ...getNavCategories().map((c) => ({ name: c.name, href: `/c/${c.slug}`, tag: c.storeOnly ? SALE_RESTRICTION_SHORT : null })),
   { name: "All categories", href: "/products" },
   { name: "Bulk & institutional", href: "/products/institutional" },
   { name: "Under ₹500", href: "/search?max=500&sort=popularity" },
@@ -163,7 +166,7 @@ export default function Footer() {
               ) : null}
             </div>
 
-            <FooterColumn title="Shop" links={SHOP_LINKS} />
+            <FooterColumn title="Shop" links={shopLinks()} />
             <FooterColumn title="Customer service" links={SERVICE_LINKS} />
             <FooterColumn title="Company" links={COMPANY_LINKS} />
             <FooterColumn title="Policies" links={POLICY_LINKS} columns={2} />

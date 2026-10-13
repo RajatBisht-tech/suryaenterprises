@@ -24,6 +24,10 @@ const fmt = (n) => n.toLocaleString("en-IN");
 const EXAMPLE_BRANDS = ["Syngenta", "Namdhari Seeds", "East West", "Bayer", "Dhanuka", "KisanKraft"];
 const brandList = `${EXAMPLE_BRANDS.slice(0, -1).join(", ")} and ${EXAMPLE_BRANDS.at(-1)}`;
 const CATEGORY_LIST = "seeds, crop protection, crop nutrition, farm machinery and animal husbandry";
+// Goods listed online but sold only at the store / institutional desk
+// (app/config/sale-restrictions.js). Keep this sentence in step with the rules.
+const RESTRICTED_GOODS =
+  "pesticides (insecticides, fungicides, herbicides, plant growth regulators), urea, animal-husbandry products, adjuvants and other agricultural chemicals, and knives";
 
 export const COMPANY_PROFILE = {
   founded: FOUNDED,
@@ -78,12 +82,15 @@ export const COMPANY_PROFILE = {
   // ---- PDF section 1: nature of business ------------------------------------
   nature: {
     paragraph:
-      `${SITE.legalName}, trading as Surya Enterprises, is a licensed agri-inputs marketplace based at Rajdhani Krishi Mandi, Jaipur, with a corporate office in New Delhi. It sells ${CATEGORY_LIST} products from leading brands (${brandList}) alongside its own crop-protection range, directly to farmers and institutional buyers through its website, its Jaipur store and an institutional desk. Founded in ${FOUNDED} as a backend support channel for the agri-inputs supply chain, the company was incorporated to build the Surya Marketplace.`,
+      `${SITE.legalName}, trading as Surya Enterprises, is a licensed agri-inputs marketplace based at Rajdhani Krishi Mandi, Jaipur, with a corporate office in New Delhi. It sells ${CATEGORY_LIST} products from leading brands (${brandList}) alongside its own crop-protection range, directly to farmers and institutional buyers through its website, its Jaipur store and an institutional desk. Pesticides, urea and other regulated goods are not sold online. Founded in ${FOUNDED} as a backend support channel for the agri-inputs supply chain, the company was incorporated to build the Surya Marketplace.`,
     bullets: [
       "Licensed agri-inputs marketplace: genuine products from leading brands alongside Surya's own crop-protection range (ISO and ZED certified; marked “Manufacturer direct” online).",
       "Sells directly to farmers (B2C, 70% of sales) and to universities and institutes, bulk enterprises, dealers and co-operatives (B2B, 30%).",
-      // {priceRange} is filled by the build script with ₹ (brand fonts embedded) or "INR".
-      `Online catalogue: ${fmt(FACTS.products)} products, ${fmt(FACTS.skus)} pack sizes, ${fmt(FACTS.brands)} brands across ${CATEGORY_LIST}, priced {priceRange} per pack.`,
+      // {onlineProducts}, {onlineSkus}, {onlineBrands}, {restrictedProducts} are
+      // computed from products.json + the sale-restriction rules by the build
+      // script (saleFacts); {priceRange} is filled with ₹ (brand fonts embedded) or "INR".
+      `Online catalogue: {onlineProducts} products ({onlineSkus} pack sizes) from {onlineBrands} brands can be bought online — seeds, traps & lures, crop nutrition and farm machinery — priced {priceRange} per pack; {restrictedProducts} further listed products are sold only at the store and institutional desk.`,
+      "Not sold online: pesticides (insecticides, fungicides, herbicides, PGRs), urea, animal-husbandry products, adjuvants and other agricultural chemicals, and knives are marked “Not for online sale” and supplied only at the Jaipur store and through the institutional desk against a valid requirement.",
       "Bulk quantities, technical grades and custom packaging by quotation through the institutional desk; every online product is also sold at the Jaipur store.",
     ],
   },
@@ -169,7 +176,9 @@ export const COMPANY_PROFILE = {
   },
 
   // ---- Product portfolio ------------------------------------------------------
-  // All five lines are live on the website (categorySlug → /c/<slug>).
+  // Lines with `online: true` can be bought on the website (categorySlug →
+  // /c/<slug>); `online: false` lines are listed online but sold only at the
+  // store and through the institutional desk (app/config/sale-restrictions.js).
   // Example product names are verified against products.json by the build script.
   productLines: [
     {
@@ -182,19 +191,19 @@ export const COMPANY_PROFILE = {
     },
     {
       name: "Crop protection",
-      detail: "Insecticides, fungicides, herbicides, bio-controls, traps and lures",
+      detail: "Traps & lures and animal repellents online; pesticides and bio-controls at the store",
       icon: "bug",
       online: true,
       categorySlug: "crop-protection",
-      examples: ["Confidor Insecticide", "Cuman L Fungicide", "Dhanuka Barrier Herbicide (Metribuzin 70% WP)", "Applaud Insecticide (Buprofezin 25% SC)"],
+      examples: ["Barrix Catch Fruit Fly Lure", "Barrix Catch Vegetable Fly Lure + Trap", "Biosun Ratsun Animal Repellents", "DR SUIBIO ORGANIC ANT REPELLENT"],
     },
     {
       name: "Crop nutrition",
-      detail: "Fertilisers, bio-fertilisers, biostimulants and growth regulators",
+      detail: "Fertilisers, bio-fertilisers, biostimulants and organic inputs",
       icon: "sack",
       online: true,
       categorySlug: "crop-nutrition",
-      examples: ["IFFCO Nano Urea Plus Fertilizers", "Rallis Surplus Micronutrient Fertilizer", "Allborich Liquid Micronutrient Fertilizer", "IFFCO Humetsu Humic Acid"],
+      examples: ["Rallis Surplus Micronutrient Fertilizer", "Allborich Liquid Micronutrient Fertilizer", "IFFCO Humetsu Humic Acid", "PHOSPHO BACTERIA BIO FERTILIZER"],
     },
     {
       name: "Farm machinery",
@@ -208,17 +217,27 @@ export const COMPANY_PROFILE = {
       name: "Animal husbandry",
       detail: "Cattle feed, milking equipment, poultry and fish care",
       icon: "cattle",
-      online: true,
+      online: false,
       categorySlug: "animal-husbandry",
+      availability: "Store & institutional desk only — not sold online",
       examples: ["GODHAN GS 120 MILKING MACHINE", "Century Biocare Rumistar", "MEENAKSHI CHICK DRINKER", "ECOWEALTH SILAGE CULTURE"],
+    },
+    {
+      name: "Pesticides (insecticides, fungicides, herbicides, PGRs) & urea",
+      detail: "Also animal-husbandry products, adjuvants and other agricultural chemicals, and knives — listed online for information only",
+      icon: "alert",
+      online: false,
+      categorySlug: null,
+      availability: "Store & institutional desk only — not sold online",
+      examples: ["Confidor Insecticide", "Cuman L Fungicide", "Dhanuka Barrier Herbicide (Metribuzin 70% WP)", "IFFCO Nano Urea Plus Fertilizers"],
     },
   ],
   availability: {
     online: { badge: "Online now", channels: "Website + store" },
     offline: {
-      badge: "By quotation",
-      channels: "Institutional desk",
-      note: "Bulk quantities, technical grades and custom packaging are supplied by quotation; every online product can also be bought at the Jaipur store.",
+      badge: "Store & quotation only",
+      channels: "Store & institutional desk only — not sold online",
+      note: `${RESTRICTED_GOODS[0].toUpperCase()}${RESTRICTED_GOODS.slice(1)} are listed on the website for information but are not sold online: they are available at the Jaipur store and by quotation through the institutional desk. Bulk quantities, technical grades and custom packaging are also supplied by quotation, and every online product can be bought at the store.`,
     },
   },
 
@@ -230,8 +249,8 @@ export const COMPANY_PROFILE = {
       icon: "globe",
       title: "Website",
       detail: "www.suryaenter.in",
-      text: "Browse by category, brand, crop and pack size. Pay by UPI via PayU; dispatch to serviceable PIN codes across India.",
-      how: "Online orders at www.suryaenter.in (browse by category, brand, crop and pack size); dispatched to serviceable PIN codes across India.",
+      text: "Browse by category, brand, crop and pack size. Pay by UPI via PayU; dispatch to serviceable PIN codes across India. Pesticides, urea and other regulated goods are shown for information only and cannot be ordered online.",
+      how: "Online orders at www.suryaenter.in (browse by category, brand, crop and pack size); dispatched to serviceable PIN codes across India. Regulated goods cannot be ordered online.",
       payment: SITE.payments.join(", "),
       href: "/products",
       cta: "Shop online",

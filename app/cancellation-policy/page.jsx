@@ -12,7 +12,7 @@ const sections = [
       <>
         <p>
           You can cancel a paid order <strong>{cancellation.window}</strong>. Once a consignment has been handed to the
-          carrier it can no longer be cancelled, because pesticide consignments cannot be recalled or re-routed in transit.
+          carrier it can no longer be cancelled, because consignments cannot be recalled or re-routed in transit.
         </p>
         <ol>
           <li>

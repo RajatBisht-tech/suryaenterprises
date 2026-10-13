@@ -7,7 +7,8 @@ import { ChevronDown } from "lucide-react";
 // One footer link column. On phones it collapses into an accordion
 // (button + aria-expanded); from lg up it is a plain heading + list.
 // Links with `soon: true` render as greyed, non-interactive labels; links
-// with `download: true` are plain anchors to a static file (e.g. a PDF).
+// with `download: true` are plain anchors to a static file (e.g. a PDF);
+// links with `tag: "Store only"` show that small tag after the name.
 // `columns={2}` splits a long list into two sub-columns on desktop; `note`
 // adds a muted trailing line (e.g. "Coming soon: …").
 export default function FooterColumn({ title, links, columns = 1, note = null }) {
@@ -57,8 +58,13 @@ export default function FooterColumn({ title, links, columns = 1, note = null })
                 {l.name}
               </a>
             ) : (
-              <Link href={l.href} className="inline-block text-white/85 hover:text-harvest hover:underline">
+              <Link href={l.href} className="inline-flex items-center gap-1.5 text-white/85 hover:text-harvest hover:underline">
                 {l.name}
+                {l.tag && (
+                  <span className="rounded-sm bg-harvest/20 px-1 py-px text-[9px] font-bold uppercase tracking-wider text-harvest no-underline">
+                    {l.tag}
+                  </span>
+                )}
               </Link>
             )}
           </li>

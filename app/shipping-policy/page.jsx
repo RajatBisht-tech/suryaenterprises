@@ -28,8 +28,8 @@ const sections = [
             <strong>{shipping.dispatchWindow}</strong> of payment confirmation, excluding Sundays and public holidays.
           </li>
           <li>
-            Transit time depends on the destination and the carrier. Because pesticide consignments move by surface
-            transport, delivery to distant or remote locations takes longer than for ordinary parcels.
+            Transit time depends on the destination and the carrier. Bulky consignments (sprayers, tarpaulins, machinery)
+            move by surface transport, so delivery to distant or remote locations takes longer than for small parcels.
           </li>
           <li>We do not promise delivery dates on the Marketplace. Once dispatched, we share the carrier and consignment details by SMS or email so you can follow the shipment.</li>
         </ul>
@@ -53,15 +53,20 @@ const sections = [
   },
   {
     id: "hazardous",
-    title: "Handling of pesticides and hazardous goods",
+    title: "Pesticides and hazardous goods",
     content: (
       <>
         <p>{shipping.hazardousNote}</p>
+        <p>
+          Products marked “Not for online sale” on the Marketplace (pesticides, growth regulators, urea, animal-husbandry
+          products, adjuvants and knives) can be enquired about through the{" "}
+          <Link href="/products/institutional">institutional desk</Link> or bought in person at the store; they are not
+          added to a cart or dispatched by courier.
+        </p>
         <ul>
-          <li>Each consignment is packed to prevent leakage and carries the hazard and handling markings required for the product class.</li>
-          <li>Liquids are packed upright with absorbent material; powders and granules are double-bagged where needed.</li>
+          <li>Liquid inputs that we do ship (bio-fertilisers, biostimulants, lures) are packed upright with absorbent material; powders and granules are double-bagged where needed, and every consignment carries the handling markings required for the product class.</li>
           <li>Delivery staff are not trained applicators. Please do not ask them to open, decant or demonstrate a product.</li>
-          <li>Keep delivered products away from children, food, feed and water sources until stored properly (see our <Link href="/product-safety-disclaimer">Product Safety Disclaimer</Link>).</li>
+          <li>Keep delivered products — and anything collected from the store — away from children, food, feed and water sources until stored properly (see our <Link href="/product-safety-disclaimer">Product Safety Disclaimer</Link>).</li>
         </ul>
       </>
     ),
@@ -125,7 +130,7 @@ export default function ShippingPolicyPage() {
     <PolicyLayout
       eyebrow="Customer service"
       title="Shipping & Delivery Policy"
-      intro="Where we deliver, how long dispatch takes, what it costs and how pesticide consignments are handled in transit."
+      intro="Where we deliver, how long dispatch takes, what it costs, and which products (pesticides, urea and other regulated goods) are sold only at our store and institutional desk."
       sections={sections}
     />
   );

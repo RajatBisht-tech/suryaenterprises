@@ -28,10 +28,13 @@ export const CATEGORIES = [
     dataCategory: "Crop Protection",
     skuCode: "CRP",
     need: "Pest, weed & disease",
+    // Home "Shop by need" tile subtitle (pesticides are store-only; see config/sale-restrictions.js).
+    tileNote: "Traps & lures and animal repellents online · pesticides and sprays at our store",
     icon: "bug",
     tint: "#E8F5EC",
     illustration: "/assets/marketplace/need-pest.svg",
-    description: "Insecticides, fungicides, herbicides, bio-controls, traps and lures for managing pests, disease and weeds.",
+    description:
+      "Traps & lures and animal repellents to buy online; insecticides, fungicides, herbicides, bio-controls and adjuvants are listed for our Jaipur store and institutional desk (not sold online).",
   },
   {
     slug: "crop-nutrition",
@@ -43,7 +46,7 @@ export const CATEGORIES = [
     icon: "sprout",
     tint: "#E7F0FB",
     illustration: "/assets/marketplace/soon-fertiliser.svg",
-    description: "Fertilisers, bio-fertilisers, biostimulants, organic inputs and growth regulators for every growth stage.",
+    description: "Fertilisers, bio-fertilisers, biostimulants and organic inputs for every growth stage; growth regulators and urea are sold at our Jaipur store only.",
   },
   {
     slug: "farm-machinery",
@@ -67,7 +70,7 @@ export const CATEGORIES = [
     icon: "package",
     tint: "#FFF6D9",
     illustration: "/assets/marketplace/need-animal.svg",
-    description: "Cattle feed, milking equipment, poultry and fish care products and other livestock supplies.",
+    description: "Cattle feed, milking equipment, poultry and fish care products and other livestock supplies — available at our Jaipur store and by quotation, not sold online.",
   },
 ];
 

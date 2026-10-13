@@ -1,6 +1,7 @@
 import { Inter, Manrope } from "next/font/google";
 import Navbar from "./components/navbar";
 import Footer from "./components/footer";
+import CartGuard from "./components/shop/CartGuard";
 import MobileBottomNav from "./components/shop/MobileBottomNav";
 import OffersMarquee from "./components/shop/OffersMarquee";
 import Toaster from "./components/shop/Toast";
@@ -17,7 +18,7 @@ export const metadata = {
     template: `%s | ${SITE.name}`,
   },
   description:
-    "Shop seeds, crop protection, crop nutrition, farm machinery and animal husbandry products from leading brands and Surya's own range — Surya Enterprises, a licensed agro-inputs marketplace for farmers, agri-retailers and institutional buyers.",
+    "Shop seeds, traps & lures, crop nutrition and farm machinery online from leading brands and Surya's own range; pesticides, urea and animal-husbandry products are available at our Jaipur store and institutional desk — Surya Enterprises, a licensed agro-inputs marketplace for farmers, agri-retailers and institutional buyers.",
 };
 
 export const viewport = {
@@ -42,6 +43,8 @@ export default function RootLayout({ children }) {
           {children}
         </StoreChrome>
         <Toaster />
+        {/* After <Toaster /> so its listener exists before the guard's first toast. */}
+        <CartGuard />
       </body>
     </html>
   );

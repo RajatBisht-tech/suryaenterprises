@@ -22,6 +22,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { readFile, writeFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import { withCatalogMedia, validateCatalogMedia } from "../app/products/data/catalog-media.mjs";
+import { applySaleRestriction } from "../app/products/data/sale-restrictions.mjs";
 import path from "node:path";
 
 const dataDir = new URL("../app/products/data/", import.meta.url);
@@ -32,7 +33,11 @@ const mediaFile = new URL("catalog-media.json", dataDir);
 const publicDir = fileURLToPath(new URL("../public/", import.meta.url));
 
 const withReference = process.argv.includes("--with-reference");
-const FIELDS = ["sku", "name", "slug", "price", "image", "unit", "category", "stock", "brand"];
+// `onlineSale` / `stock` come out of applySaleRestriction: products matched by
+// app/config/sale-restrictions.js carry onlineSale:false, stock:0 and a
+// `restriction` object so the cart, wishlist and the frozen checkout page
+// (which read this index) never treat them as purchasable.
+const FIELDS = ["sku", "name", "slug", "price", "image", "unit", "category", "stock", "brand", "onlineSale"];
 const FORBIDDEN = [
   { label: "source-site string", test: (text) => /bighaat/i.test(text) },
   { label: "development reference-image path", test: (text) => text.includes("/dev-reference-image/") },
@@ -82,10 +87,15 @@ if (withReference) {
 }
 
 let merged = 0;
+let restricted = 0;
 const index = products.map((entry) => {
-  const product = withCatalogMedia(entry, media);
+  const product = applySaleRestriction(withCatalogMedia(entry, media));
   const slim = {};
   for (const field of FIELDS) slim[field] = product[field];
+  if (product.restriction) {
+    slim.restriction = product.restriction;
+    restricted += 1;
+  }
   // productsForView("Featured") relies on this flag; only emitted when true.
   if (product.isFeatured) slim.isFeatured = true;
   const ref = reference?.(product.sku);
@@ -112,7 +122,7 @@ try {
 if (previous !== json) await writeFile(target, json);
 
 console.log(
-  `[product-index] ${index.length} products -> ${fileURLToPath(target)} (${(json.length / 1024).toFixed(0)} KB)${
+  `[product-index] ${index.length} products (${restricted} not for online sale) -> ${fileURLToPath(target)} (${(json.length / 1024).toFixed(0)} KB)${
     reference ? ` — LOCAL index with reference images for ${merged} products (git-ignored, never deploy)` : ""
   }`
 );

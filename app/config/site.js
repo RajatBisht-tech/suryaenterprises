@@ -150,12 +150,15 @@ export const SITE = {
   // `icon` keys: sprout, upi, building, tag, package, truck, phone.
   // -------------------------------------------------------------------------
   offersSiteWide: false, // true shows the ticker on every page, false = home only
+  // Pesticides, urea and other regulated goods are NOT sold online (see
+  // config/sale-restrictions.js) — never advertise them as shoppable here.
   offers: [
     { text: "Genuine products from Syngenta, Namdhari Seeds, East West, Bayer, Dhanuka & more, alongside Surya's own range", href: "/products", icon: "sprout", enabled: true },
     { text: "Pay securely with UPI via PayU", href: "/payment-policy", icon: "upi", enabled: true },
+    { text: "Pesticides & urea: available at our Jaipur store and by quotation", href: "/faqs#restricted", icon: "building", enabled: true },
     { text: "Bulk & institutional orders — request a quote", href: "/products/institutional", icon: "building", enabled: true },
     { text: "Shop products under ₹500", href: "/search?max=500&sort=popularity", icon: "tag", enabled: true },
-    { text: "Seeds, crop protection, crop nutrition, farm machinery & animal husbandry — every pack size", href: "/products", icon: "package", enabled: true },
+    { text: "Seeds, traps & lures, crop nutrition and farm machinery online — every pack size", href: "/products", icon: "package", enabled: true },
   ],
 
   // -------------------------------------------------------------------------
@@ -186,13 +189,14 @@ export const SITE = {
       enabled: true,
     },
     {
-      id: "weed-control",
-      title: "Weed control essentials",
-      subtitle: "Herbicides by brand and pack size.",
-      cta: "Shop herbicides",
-      href: "/c/crop-protection/herbicides",
+      // Replaced the herbicides slide: pesticides are not sold online.
+      id: "soil-health",
+      title: "Bio-fertilisers & biostimulants",
+      subtitle: "Soil and plant health inputs by brand and pack size.",
+      cta: "Shop bio-fertilisers",
+      href: "/c/crop-nutrition/bio-fertilizers",
       theme: "earth",
-      art: "weed",
+      art: "growth",
       enabled: true,
     },
     {
@@ -206,19 +210,30 @@ export const SITE = {
       enabled: true,
     },
     {
-      id: "pest-control",
-      title: "Insect & pest control",
-      subtitle: "Insecticides, bio-insecticides, traps and lures.",
-      cta: "Shop insecticides",
-      href: "/c/crop-protection/insecticides",
+      // Replaced the insecticides slide: pesticides are not sold online.
+      id: "traps-lures",
+      title: "Traps, lures & repellents",
+      subtitle: "Pheromone lures, sticky traps and animal repellents — chemical-free pest control.",
+      cta: "Shop traps & lures",
+      href: "/c/crop-protection/traps-and-lures",
       theme: "harvest",
       art: "pest",
       enabled: true,
     },
     {
+      id: "sprayers",
+      title: "Sprayers for every farm",
+      subtitle: "Knapsack, battery and power sprayers by brand and tank size.",
+      cta: "Shop sprayers",
+      href: "/c/farm-machinery/sprayers",
+      theme: "green",
+      art: "warehouse",
+      enabled: true,
+    },
+    {
       id: "machinery",
-      title: "Sprayers, tools & covers",
-      subtitle: "Knapsack sprayers, brush cutters, tarpaulins and mulches.",
+      title: "Tools & covers",
+      subtitle: "Brush cutters, tillers, hand tools, tarpaulins and mulches.",
       cta: "Shop farm machinery",
       href: "/c/farm-machinery",
       theme: "earth",
@@ -259,12 +274,13 @@ export const SITE = {
       dispatchWindow: "2–4 working days",
       // PLACEHOLDER — how delivery charges are communicated.
       charges: "Delivery charges, if any, depend on the destination PIN and the weight/volume of the order and are confirmed when you place your order.",
-      // PLACEHOLDER — locations that cannot be served or need extra time.
+      // PLACEHOLDER — locations that cannot be served or need extra time (ODA note).
       restrictedAreas:
-        "Remote, hilly, island and out-of-delivery-area (ODA) PIN codes may take longer or may not be serviceable for pesticide consignments.",
-      // PLACEHOLDER — hazardous-goods transport note for pesticides.
+        "Remote, hilly, island and out-of-delivery-area (ODA) PIN codes may take longer or may not be serviceable for bulky consignments.",
+      // Pesticides and other regulated goods are not sold or shipped through the
+      // website (config/sale-restrictions.js); this note explains where they are sold.
       hazardousNote:
-        "Pesticides and agrochemicals are classified as regulated goods. They are shipped only in sealed, labelled manufacturer packaging through surface transport; air shipment is not available.",
+        "Pesticides, plant growth regulators, urea and other regulated agrochemicals are not sold or shipped through the website. They are available at our Jaipur store and through the institutional desk, where they are handed over only in sealed, labelled manufacturer packaging. Products shipped from online orders (seeds, traps & lures, fertilisers, bio-inputs, machinery) travel by courier or surface transport.",
     },
     returns: {
       // PLACEHOLDER — days from delivery within which a claim must be raised.

@@ -10,6 +10,7 @@ import ProductImages from "../../components/shop/ProductImages";
 import ProductRail from "../../components/shop/ProductRail";
 import RatingBadge from "../../components/shop/RatingBadge";
 import RecentlyViewed from "../../components/shop/RecentlyViewed";
+import SaleRestrictionNotice from "../../components/shop/SaleRestrictionNotice";
 import StockBadge from "../../components/shop/StockBadge";
 import TrackRecent from "../../components/shop/TrackRecent";
 import { isPlaceholderImage } from "../../config/placeholders";
@@ -24,6 +25,7 @@ import {
   toCard,
 } from "../../products/data/catalog.server";
 import { specsFor } from "../../products/data/describe.mjs";
+import { restrictionFor } from "../../products/data/sale-restrictions.mjs";
 
 // 12k+ products: render on demand (no generateStaticParams) and cache the
 // result for a day; catalogue changes ship with a deploy anyway.
@@ -109,6 +111,10 @@ export default async function ProductPage({ params }) {
   const alsoViewed = getAlsoViewed(product);
   const card = toCard(product);
   const isCropProtection = product.category === "Crop Protection";
+  // "Not for online sale" (app/config/sale-restrictions.js): the notice panel
+  // replaces the buy box and the offer is marked in-store only.
+  const restriction = product.onlineSale === false ? restrictionFor(product) ?? product.restriction : null;
+  const store = SITE.offices.find((o) => /registered/i.test(o.kind ?? "")) ?? SITE.offices[0];
 
   const specs = [...Object.entries(specsFor(product)), ["SKU", product.sku]];
 
@@ -134,7 +140,11 @@ export default async function ProductPage({ params }) {
       "@type": "Offer",
       priceCurrency: "INR",
       price: product.price,
-      availability: product.stock > 0 ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
+      availability: restriction
+        ? "https://schema.org/InStoreOnly"
+        : product.stock > 0
+          ? "https://schema.org/InStock"
+          : "https://schema.org/OutOfStock",
     },
   };
 
@@ -192,7 +202,7 @@ export default async function ProductPage({ params }) {
                         aria-current={active ? "true" : undefined}
                         className={`flex min-w-20 flex-col items-center rounded-md border-2 px-3 py-1.5 text-center transition ${
                           active ? "border-brand bg-brand-tint" : "border-line hover:border-ink-3"
-                        } ${v.stock > 0 ? "" : "opacity-60"}`}
+                        } ${v.stock > 0 || v.onlineSale === false ? "" : "opacity-60"}`}
                       >
                         <span className="text-[13px] font-semibold text-ink">{v.unit}</span>
                         <span className="text-xs tabular-nums text-ink-2">₹{v.price.toLocaleString("en-IN")}</span>
@@ -205,20 +215,36 @@ export default async function ProductPage({ params }) {
           )}
 
           <div className="mt-5 flex items-center gap-2">
-            <StockBadge stock={product.stock} verbose />
+            <StockBadge stock={product.stock} restriction={restriction} verbose />
           </div>
 
           <div className="mt-3">
-            <BuyBox sku={product.sku} name={product.name} stock={product.stock} />
+            {restriction ? (
+              <SaleRestrictionNotice sku={product.sku} name={product.name} restriction={restriction} />
+            ) : (
+              <BuyBox sku={product.sku} name={product.name} stock={product.stock} />
+            )}
           </div>
 
           <div className="mt-6 border-t border-line pt-4">
-            <p className="mb-2 text-[13px] font-semibold text-ink">Delivery</p>
-            <PinCheck />
-            {product.stateRestrictions?.length > 0 && (
-              <p className="mt-2 text-xs text-ink-2">
-                Not available for delivery to: {product.stateRestrictions.join(", ")}.
-              </p>
+            {restriction ? (
+              <>
+                <p className="mb-2 text-[13px] font-semibold text-ink">Where to buy</p>
+                <p className="text-[13px] leading-5 text-ink-2">
+                  Not shipped through the website. Collect from our Jaipur store ({store.address}) or ask the institutional desk
+                  for a quotation — {SITE.helpline.hours}.
+                </p>
+              </>
+            ) : (
+              <>
+                <p className="mb-2 text-[13px] font-semibold text-ink">Delivery</p>
+                <PinCheck />
+                {product.stateRestrictions?.length > 0 && (
+                  <p className="mt-2 text-xs text-ink-2">
+                    Not available for delivery to: {product.stateRestrictions.join(", ")}.
+                  </p>
+                )}
+              </>
             )}
           </div>
 

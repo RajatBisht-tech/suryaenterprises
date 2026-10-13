@@ -605,3 +605,6 @@
 @media (prefers-reduced-motion: reduce) {
   .root *, .root *::before, .root *::after { animation: none !important; transition: none !important; }
 }
+
+/* "Not for online sale" (app/config/sale-restrictions.js) flag on a matched catalogue product. */
+.restrictedTag { display: inline-block; margin-top: 4px; padding: 1px 6px; border-radius: 3px; background: #fff7e6; border: 1px solid #f3c56b; color: #92400e; font-size: 8.5px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; line-height: 1.5; }

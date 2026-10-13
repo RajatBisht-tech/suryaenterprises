@@ -22,6 +22,7 @@ import { mkdir, readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import { COMPANY_PROFILE as P, formatProfileDate, priceRange, socialStatement } from "../app/config/company-profile.js";
 import { SITE } from "../app/config/site.js";
+import { saleFacts } from "../app/products/data/sale-restrictions.mjs";
 
 const root = new URL("../", import.meta.url);
 const LOGO = fileURLToPath(new URL("public/assets/brand/surya-logo-wide.png", root));
@@ -88,6 +89,17 @@ const drift = Object.keys(live).filter((key) => live[key] !== P.catalogue[key]);
 for (const key of drift) {
   console.warn(`[company-profile] WARNING: catalogue.${key} is ${P.catalogue[key]} in catalog-facts.js but ${live[key]} in products.json — re-run scripts/import-brand-catalog.mjs`);
 }
+// Online-sellable figures: the same computation the storefront uses
+// (getCatalogStats / saleFacts), so the hero, About page and PDF agree.
+const facts = saleFacts(products);
+const fmtN = (n) => n.toLocaleString("en-IN");
+const fill = (str) =>
+  str
+    .replace("{priceRange}", priceRange(CURRENCY))
+    .replace("{onlineProducts}", fmtN(facts.online.products))
+    .replace("{onlineSkus}", fmtN(facts.online.skus))
+    .replace("{onlineBrands}", fmtN(facts.online.brands))
+    .replace("{restrictedProducts}", fmtN(facts.restricted.products));
 // Example product names: a record's name is "<product> - <pack size>".
 const prefixes = new Set(products.map((p) => p.name.slice(0, p.name.length - p.unit.length - 3).trim().toLowerCase()));
 const missingExamples = P.productLines.flatMap((line) => line.examples.filter((e) => !prefixes.has(e.toLowerCase())).map((e) => `${e} (${line.name})`));
@@ -323,28 +335,31 @@ let y = identityCard(CONTENT_TOP);
 mark("page 1 identity");
 
 y = h2("1. Nature of business", y + GAP);
-y = text(P.nature.paragraph, PAGE.mx, y, W, { size: 11, color: C.ink });
+y = text(P.nature.paragraph, PAGE.mx, y, W, { size: 10.5, color: C.ink, ratio: 1.4 });
 mark("page 1 paragraph");
 
-// The four key points as a 2 × 2 grid of cream cards (same copy as the bullets).
+// The key points as a grid of cream cards, two per row (same copy as the
+// bullets); an odd last item spans the full width.
 {
-  const items = P.nature.bullets.map((b) => b.replace("{priceRange}", priceRange(CURRENCY)));
-  const gap = 14;
+  const items = P.nature.bullets.map(fill);
+  const gap = 10;
   const cw = (W - gap) / 2;
-  const pad = 14;
+  const pad = 10;
   const textX = 30; // room for the number badge
-  const heights = items.map((item) => heightOf(item, cw - pad - textX - pad, { size: 10.5, ratio: 1.45 }));
-  let cy = y + 14;
-  for (let r = 0; r < 2; r += 1) {
-    const rowH = Math.max(heights[r * 2], heights[r * 2 + 1]) + pad * 2;
-    for (let c = 0; c < 2; c += 1) {
-      const i = r * 2 + c;
+  const size = 9.5;
+  let cy = y + 10;
+  for (let i = 0; i < items.length; i += 2) {
+    const row = items.slice(i, i + 2);
+    const widths = row.length === 2 ? [cw, cw] : [W];
+    const rowH = Math.max(...row.map((item, c) => heightOf(item, widths[c] - pad - textX - pad, { size, ratio: 1.35 }))) + pad * 2;
+    row.forEach((item, c) => {
       const cx = PAGE.mx + (cw + gap) * c;
-      card(cx, cy, cw, rowH, { accent: (r + c) % 2 === 0 ? C.green : C.yellow });
+      card(cx, cy, widths[c], rowH, { accent: (i + c) % 2 === 0 ? C.green : C.yellow });
       doc.circle(cx + pad + 8, cy + pad + 8, 8).fill(C.green);
-      font(F.semi, 8, C.white).text(String(i + 1), cx + pad + 8 - doc.widthOfString(String(i + 1)) / 2, cy + pad + 3, { lineBreak: false });
-      text(items[i], cx + pad + textX, cy + pad, cw - pad - textX - pad, { size: 10.5, ratio: 1.45, color: C.ink });
-    }
+      const n = String(i + c + 1);
+      font(F.semi, 8, C.white).text(n, cx + pad + 8 - doc.widthOfString(n) / 2, cy + pad + 3, { lineBreak: false });
+      text(item, cx + pad + textX, cy + pad, widths[c] - pad - textX - pad, { size, ratio: 1.35, color: C.ink });
+    });
     cy += rowH + gap;
   }
   y = cy - gap;
@@ -361,15 +376,18 @@ y = table({
   x: PAGE.mx,
   y,
   columns: [
-    { label: "Category", width: 100, bold: true },
-    { label: "Example products", width: 217 },
-    { label: "Availability", width: W - 100 - 217 },
+    { label: "Category", width: 128, bold: true },
+    { label: "Example products", width: 205 },
+    { label: "Availability", width: W - 128 - 205 },
   ],
   rows: P.productLines.map((l) => [
     l.name,
     l.examples.length ? l.examples.slice(0, 3).join(" · ") : "Range available in-store and by quotation; coming online in phases.",
-    l.online ? { chip: P.availability.online.channels, tone: "green" } : { chip: P.availability.offline.channels, tone: "yellow" },
+    // Online lines get the green chip; store-only lines spell out the channel.
+    l.online ? { chip: P.availability.online.channels, tone: "green" } : l.availability ?? P.availability.offline.channels,
   ]),
+  fontSize: 9,
+  pad: 6,
 });
 mark("page 2 products");
 

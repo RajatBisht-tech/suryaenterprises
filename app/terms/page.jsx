@@ -32,9 +32,11 @@ const sections = [
         <ul>
           <li>You must be at least 18 years old and competent to contract under the Indian Contract Act, 1872.</li>
           <li>
-            Pesticides and other crop-protection products are regulated under the Insecticides Act, 1968 and the
-            Insecticides Rules, 1971. By ordering, you confirm that you are buying for bona fide agricultural use, or
-            that you hold any licence required for resale or commercial stocking in your state.
+            Pesticides, plant growth regulators and other crop-protection chemicals are regulated under the Insecticides
+            Act, 1968 and the Insecticides Rules, 1971. They are listed on the Marketplace as “Not for online sale” and
+            are supplied only at our Jaipur store and through the institutional desk. By buying any agro-input from us,
+            you confirm that you are buying for bona fide agricultural use, or that you hold any licence required for
+            resale or commercial stocking in your state.
           </li>
           <li>
             Products must be used only on the crops, at the doses and in the manner stated on the CIB&amp;RC-approved
@@ -112,8 +114,8 @@ const sections = [
       <p>
         Delivery timelines and charges are governed by our <Link href="/shipping-policy">Shipping Policy</Link>; order
         cancellation by our <Link href="/cancellation-policy">Cancellation Policy</Link>; and damaged, wrong or
-        expired-on-arrival items by our <Link href="/return-refund-policy">Return &amp; Refund Policy</Link>. Because
-        pesticides are hazardous goods, opened or used products cannot be returned.
+        expired-on-arrival items by our <Link href="/return-refund-policy">Return &amp; Refund Policy</Link>. Opened or
+        used agro-inputs (seeds, fertilisers, bio-inputs and any chemical) cannot be returned.
       </p>
     ),
   },

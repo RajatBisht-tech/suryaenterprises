@@ -1,11 +1,36 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { Suspense, useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import {
-  Award, Beaker, Download, FlaskConical, Grid3x3, List, Mail, Package, Phone, Search, Star, X,
+  Award, Beaker, Download, FlaskConical, Grid3x3, List, Mail, Package, Phone, Search, Star, Store, X,
 } from 'lucide-react';
 import PageHeader from '../../components/shop/PageHeader';
 import { SITE, telHref } from '../../config/site';
+
+// Product pages and cards link here as /products/institutional?sku=<sku> for
+// items that are "Not for online sale". The SKU (and its name, looked up in
+// the lazily loaded client index) is shown in the enquiry box and included
+// in the e-mail. Reads the URL inside Suspense so the page can still be
+// prerendered.
+function SkuParam({ onResolve }) {
+  const params = useSearchParams();
+  const sku = params.get('sku') || '';
+  useEffect(() => {
+    if (!sku) {
+      onResolve(null);
+      return undefined;
+    }
+    let cancelled = false;
+    import('../data/products').then(({ getProduct }) => {
+      if (!cancelled) onResolve(getProduct(sku) ?? { sku, name: null });
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [sku, onResolve]);
+  return null;
+}
 
 // ONLY the data provided by Surya Enterprises - no extra categories
 const products = [
@@ -52,9 +77,12 @@ const purityTone = (purity) => {
   return { badge: 'bg-[#EEF0EF] text-[#4A5A50]', bar: '#7C8A81' };
 };
 
-const quoteHref = (names) => {
-  const subject = `Institutional quote request: ${names.length === 1 ? names[0] : `${names.length} products`}`;
-  const body = `Hello Surya Enterprises,\n\nPlease share a quotation for the following technical-grade products:\n\n${names
+const quoteHref = (names, enquiry = null) => {
+  const skuLine = enquiry ? `- ${enquiry.name ? `${enquiry.name} (SKU ${enquiry.sku})` : `SKU ${enquiry.sku}`}\n` : '';
+  const count = names.length + (enquiry ? 1 : 0);
+  const first = enquiry ? enquiry.name ?? `SKU ${enquiry.sku}` : names[0];
+  const subject = `Institutional quote request: ${count === 1 ? first : `${count} products`}`;
+  const body = `Hello Surya Enterprises,\n\nPlease share a quotation for the following products:\n\n${skuLine}${names
     .map((n) => `- ${n}`)
     .join('\n')}\n\nRequired quantity:\nDelivery location / PIN:\nCompany name:\nContact number:\n\nThank you.`;
   return `mailto:${SITE.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
@@ -76,6 +104,8 @@ export default function InstitutionalProducts() {
   const [viewMode, setViewMode] = useState('list');
   const [filterPurity, setFilterPurity] = useState('all');
   const [selected, setSelected] = useState([]);
+  // Store-only product the visitor arrived from (?sku=), or null.
+  const [enquiry, setEnquiry] = useState(null);
 
   const sortedProducts = useMemo(() => {
     const range = purityRanges.find((r) => r.value === filterPurity) ?? purityRanges[0];
@@ -89,6 +119,9 @@ export default function InstitutionalProducts() {
 
   return (
     <main className="pb-20 lg:pb-3">
+      <Suspense fallback={null}>
+        <SkuParam onResolve={setEnquiry} />
+      </Suspense>
       <PageHeader
         eyebrow="Institutional Grade"
         title="Institutional Products"
@@ -285,6 +318,20 @@ export default function InstitutionalProducts() {
               Bulk enquiry
             </h2>
             <div className="px-4 py-3">
+              {enquiry && (
+                <div className="mb-3 rounded-md border border-notice-line bg-notice-tint px-3 py-2 text-[13px] text-ink" role="status">
+                  <p className="flex items-center gap-1.5 font-semibold text-notice">
+                    <Store className="h-4 w-4" strokeWidth={1.75} aria-hidden="true" />
+                    Enquiry about a store-only product
+                  </p>
+                  <p className="mt-1 leading-5">
+                    {enquiry.name ? <span className="font-medium">{enquiry.name}</span> : 'Product'} · SKU <code className="font-mono text-[12px]">{enquiry.sku}</code>
+                  </p>
+                  <p className="mt-1 text-xs text-ink-2">
+                    Not for online sale — available at our Jaipur store and by quotation. The SKU is included in the e-mail below.
+                  </p>
+                </div>
+              )}
               {selected.length === 0 ? (
                 <p className="text-[13px] text-ink-2">Tick products in the list to build a single quote request, or contact us directly.</p>
               ) : (
@@ -299,11 +346,15 @@ export default function InstitutionalProducts() {
                 </ul>
               )}
               <a
-                href={selected.length ? quoteHref(selected) : `mailto:${SITE.email}?subject=${encodeURIComponent('Institutional enquiry')}`}
+                href={
+                  selected.length || enquiry
+                    ? quoteHref(selected, enquiry)
+                    : `mailto:${SITE.email}?subject=${encodeURIComponent('Institutional enquiry')}`
+                }
                 className="btn btn-buy mt-3 w-full"
               >
                 <Mail className="h-4 w-4" strokeWidth={1.75} aria-hidden="true" />
-                {selected.length ? `Email quote request (${selected.length})` : 'Email us'}
+                {selected.length || enquiry ? `Email quote request (${selected.length + (enquiry ? 1 : 0)})` : 'Email us'}
               </a>
               <a href={telHref} className="btn btn-outline mt-2 w-full">
                 <Phone className="h-4 w-4" strokeWidth={1.75} aria-hidden="true" />

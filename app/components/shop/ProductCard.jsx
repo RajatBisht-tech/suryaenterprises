@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { MessageSquareText } from "lucide-react";
 import { productHref } from "../../config/taxonomy";
 import AddToCartControl from "./AddToCartControl";
 import PriceTag from "./PriceTag";
@@ -7,10 +8,16 @@ import RatingBadge from "./RatingBadge";
 import StockBadge from "./StockBadge";
 import WishlistButton from "./WishlistButton";
 
+// Enquiry link for store-only products (the institutional page reads ?sku=).
+export const enquiryHref = (sku) => `/products/institutional?sku=${encodeURIComponent(sku)}`;
+
 // Works from server and client components (no hooks of its own).
 export default function ProductCard({ product, priority = false, layout = "grid" }) {
   const p = product;
   const rail = layout === "rail";
+  // "Not for online sale" (app/config/sale-restrictions.js): badge instead of
+  // the stock line, "Enquire" instead of add-to-cart; the price stays visible.
+  const restricted = p.onlineSale === false || Boolean(p.restriction);
   return (
     <article
       className={`group relative flex h-full flex-col rounded-lg border border-line bg-white p-2.5 transition-shadow hover:shadow-[0_4px_16px_rgba(20,33,26,0.10)] sm:p-3 ${
@@ -44,10 +51,21 @@ export default function ProductCard({ product, priority = false, layout = "grid"
           <PriceTag price={p.price} mrp={p.mrp} size="sm" />
         </div>
         <div className="mt-0.5 min-h-4">
-          <StockBadge stock={p.stock} />
+          <StockBadge stock={p.stock} restriction={restricted ? p.restriction ?? {} : null} />
         </div>
       </Link>
-      <AddToCartControl sku={p.sku} name={p.name} stock={p.stock} className="mt-2" />
+      {restricted ? (
+        <Link
+          href={enquiryHref(p.sku)}
+          aria-label={`Enquire about ${p.name} (not for online sale)`}
+          className="btn btn-outline mt-2 h-8 w-full text-[13px]"
+        >
+          <MessageSquareText className="h-4 w-4" strokeWidth={1.75} aria-hidden="true" />
+          Enquire
+        </Link>
+      ) : (
+        <AddToCartControl sku={p.sku} name={p.name} stock={p.stock} className="mt-2" />
+      )}
     </article>
   );
 }

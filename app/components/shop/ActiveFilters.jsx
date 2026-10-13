@@ -28,7 +28,7 @@ export default function ActiveFilters({ basePath, state, scope, facets }) {
     chips.push({ key: "price", label, o: { min: null, max: null } });
   }
   state.units.forEach((u) => chips.push({ key: `unit-${u}`, label: u, o: { units: state.units.filter((x) => x !== u) } }));
-  if (state.inStock) chips.push({ key: "stock", label: "In stock", o: { inStock: false } });
+  if (state.inStock) chips.push({ key: "stock", label: "Available online", o: { inStock: false } });
   if (!chips.length) return null;
   return (
     <ul className="flex flex-wrap gap-1.5" aria-label="Active filters">

@@ -7,7 +7,7 @@ import { Heart, Menu, Phone, ShoppingCart, X, ChevronRight } from "lucide-react"
 import { SITE, telHref } from "../../config/site";
 import { cartCount, useCart, useCartHydrated } from "../../lib-shop/cart";
 import { useWishlist, useWishlistHydrated } from "../../lib-shop/wishlist";
-import CategoryMegaMenu from "./CategoryMegaMenu";
+import CategoryMegaMenu, { StoreOnlyTag } from "./CategoryMegaMenu";
 import AccountMenu, { AccountDrawerLinks, AccountIconLink } from "./AccountMenu";
 import BrandLogo from "./BrandLogo";
 import PinPicker from "./PinPicker";
@@ -78,7 +78,10 @@ function MobileMenu({ open, onClose, categories }) {
                   <span className="flex h-9 w-9 items-center justify-center rounded-full" style={{ background: c.tint }}>
                     {Icon && <Icon className="h-4 w-4 text-brand" strokeWidth={1.75} aria-hidden="true" />}
                   </span>
-                  <span className="flex-1">{c.name}</span>
+                  <span className="flex flex-1 items-center gap-1.5">
+                    {c.name}
+                    {c.storeOnly && <StoreOnlyTag />}
+                  </span>
                   <span className="text-xs tabular-nums text-ink-2">{c.count.toLocaleString("en-IN")}</span>
                   <ChevronRight className="h-4 w-4 text-ink-3" strokeWidth={1.75} aria-hidden="true" />
                 </Link>

@@ -5,7 +5,9 @@ import ProductCard from "./ProductCard";
 import ProductRail from "./ProductRail";
 
 export default function RecentlyViewed({ excludeSku }) {
-  const items = useRecent().filter((c) => c?.sku && c.sku !== excludeSku);
+  // Snapshots carry the index flag: "Not for online sale" products never
+  // appear in this rail (they stay reachable from listings and search).
+  const items = useRecent().filter((c) => c?.sku && c.sku !== excludeSku && c.onlineSale !== false && !c.restriction);
   if (!items.length) return null;
   return (
     <div className="relative">
