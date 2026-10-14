@@ -126,7 +126,7 @@ const sections = [
           </li>
           <li>File a complaint with the appropriate <strong>District, State or National Consumer Disputes Redressal Commission</strong> under the Consumer Protection Act, 2019, including through the e-Daakhil portal.</li>
           <li>For personal-data matters, approach the <strong>Data Protection Board of India</strong> under the DPDP Act, 2023.</li>
-          <li>For pesticide quality concerns, you may also inform the <strong>Insecticide Inspector</strong> of your district under the Insecticides Act, 1968.</li>
+          <li>For seed quality concerns, you may also inform the <strong>Seed Inspector</strong> of your district under the Seeds Act, 1966.</li>
         </ul>
       </>
     ),

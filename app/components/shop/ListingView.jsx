@@ -1,6 +1,5 @@
-import { PackageSearch, Store } from "lucide-react";
+import { PackageSearch } from "lucide-react";
 import Link from "next/link";
-import { SALE_RESTRICTION_LABEL } from "../../config/sale-restrictions";
 import { SORTS } from "../../products/data/catalog.server";
 import ActiveFilters from "./ActiveFilters";
 import Breadcrumbs from "./Breadcrumbs";
@@ -39,7 +38,7 @@ export default function ListingView({
   suggestions,
   children,
 }) {
-  const { items, total, storeOnlyTotal = 0, page, pageCount, pageSize, facets } = result;
+  const { items, total, page, pageCount, pageSize, facets } = result;
   const from = total ? (page - 1) * pageSize + 1 : 0;
   const to = Math.min(page * pageSize, total);
   const sorts = scope === "search" ? SORTS : SORTS.map((s) => (s.value === "relevance" ? { ...s, label: "Featured" } : s));
@@ -77,19 +76,6 @@ export default function ListingView({
               </p>
             </div>
             {intro && <p className="mt-1 max-w-3xl text-[13px] text-ink-2">{intro}</p>}
-            {storeOnlyTotal > 0 && (
-              <p className="mt-2 flex items-start gap-1.5 rounded-md border border-notice-line bg-notice-tint px-2.5 py-1.5 text-[12.5px] leading-5 text-ink">
-                <Store className="mt-0.5 h-3.5 w-3.5 shrink-0 text-notice" strokeWidth={2} aria-hidden="true" />
-                <span>
-                  <span className="font-semibold text-notice">{storeOnlyTotal.toLocaleString("en-IN")}</span> of these listings are marked “{SALE_RESTRICTION_LABEL}”:
-                  pesticides, urea and other regulated goods are available at our Jaipur store and{" "}
-                  <Link href="/products/institutional" className="font-semibold text-brand hover:underline">
-                    by quotation
-                  </Link>
-                  . Online-sellable items are listed first.
-                </span>
-              </p>
-            )}
             {children}
             {filtersActive > 0 && (
               <div className="mt-2">

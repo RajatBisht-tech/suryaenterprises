@@ -10,7 +10,6 @@ import ProductImages from "../../components/shop/ProductImages";
 import ProductRail from "../../components/shop/ProductRail";
 import RatingBadge from "../../components/shop/RatingBadge";
 import RecentlyViewed from "../../components/shop/RecentlyViewed";
-import SaleRestrictionNotice from "../../components/shop/SaleRestrictionNotice";
 import StockBadge from "../../components/shop/StockBadge";
 import TrackRecent from "../../components/shop/TrackRecent";
 import { isPlaceholderImage } from "../../config/placeholders";
@@ -25,10 +24,9 @@ import {
   toCard,
 } from "../../products/data/catalog.server";
 import { specsFor } from "../../products/data/describe.mjs";
-import { restrictionFor } from "../../products/data/sale-restrictions.mjs";
 
-// 12k+ products: render on demand (no generateStaticParams) and cache the
-// result for a day; catalogue changes ship with a deploy anyway.
+// Thousands of products: render on demand (no generateStaticParams) and cache
+// the result for a day; catalogue changes ship with a deploy anyway.
 export const revalidate = 86400;
 
 export async function generateMetadata({ params }) {
@@ -51,37 +49,26 @@ export async function generateMetadata({ params }) {
 
 // Safety & usage guidance by level-1 category (our own generic text).
 const SAFETY = {
-  "Crop Protection": [
-    "Wear protective gloves, mask and clothing while mixing and spraying.",
-    "Do not eat, drink or smoke during application.",
-    "Store in the original container in a cool, dry, locked place.",
-    "Dispose of empty containers as instructed on the label.",
-  ],
-  "Crop Nutrition": [
-    "Apply at the rate and timing printed on the label for the crop and growth stage.",
-    "Avoid contact with eyes and skin; wash hands after handling.",
-    "Store sealed in a dry place away from children and food.",
-    "Do not mix with other inputs unless the label permits it.",
-  ],
   Seeds: [
     "Sow as directed on the packet; germination depends on season and soil.",
     "Treated seeds are not for food, feed or oil extraction.",
     "Store unopened packets in a cool, dry place away from children.",
     "Keep the packet and lot number until the crop is established.",
   ],
+  "Traps & Repellents": [
+    "Install traps at the height and spacing recommended on the pack, before the pest is expected.",
+    "Replace lures and sticky sheets at the interval the manufacturer states.",
+    "Keep repellents away from children, food, feed and water sources.",
+    "Dispose of used sticky sheets and lures with household waste as instructed on the pack.",
+  ],
   "Farm Machinery": [
     "Read the operating manual before first use and keep all guards in place.",
     "Wear eye and ear protection and sturdy footwear while operating.",
-    "Keep fuel and chemicals away from flames; refuel only when the engine is cool.",
+    "Keep fuel away from flames; refuel only when the engine is cool.",
     "Service and store as described by the manufacturer.",
   ],
-  "Animal Husbandry": [
-    "Use as directed on the label; consult a veterinarian for dosage where applicable.",
-    "Observe any withdrawal period stated on the label before using milk or meat.",
-    "Store in a cool, dry place away from children and feed.",
-    "Keep equipment clean and disinfected between uses.",
-  ],
 };
+const GENERIC_SAFETY = ["Use only as described on the pack and in the manufacturer's instructions.", "Store in a cool, dry place away from children."];
 
 function SectionCard({ id, title, children }) {
   return (
@@ -110,11 +97,6 @@ export default async function ProductPage({ params }) {
   const similar = getSimilarProducts(product);
   const alsoViewed = getAlsoViewed(product);
   const card = toCard(product);
-  const isCropProtection = product.category === "Crop Protection";
-  // "Not for online sale" (app/config/sale-restrictions.js): the notice panel
-  // replaces the buy box and the offer is marked in-store only.
-  const restriction = product.onlineSale === false ? restrictionFor(product) ?? product.restriction : null;
-  const store = SITE.offices.find((o) => /registered/i.test(o.kind ?? "")) ?? SITE.offices[0];
 
   const specs = [...Object.entries(specsFor(product)), ["SKU", product.sku]];
 
@@ -140,11 +122,7 @@ export default async function ProductPage({ params }) {
       "@type": "Offer",
       priceCurrency: "INR",
       price: product.price,
-      availability: restriction
-        ? "https://schema.org/InStoreOnly"
-        : product.stock > 0
-          ? "https://schema.org/InStock"
-          : "https://schema.org/OutOfStock",
+      availability: product.stock > 0 ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
     },
   };
 
@@ -177,7 +155,7 @@ export default async function ProductPage({ params }) {
             <RatingBadge rating={product.rating} reviewsCount={product.reviewsCount} size="lg" />
             <span className="inline-flex items-center gap-1 text-xs font-medium text-ink-2">
               <BadgeCheck className="h-4 w-4 text-brand" strokeWidth={1.75} aria-hidden="true" />
-              {product.isOwnBrand ? "Manufacturer direct" : `Genuine ${product.brand} product`}
+              Genuine {product.brand} product
             </span>
             <span className="text-xs text-ink-2">Sold by {SITE.name}</span>
           </div>
@@ -202,7 +180,7 @@ export default async function ProductPage({ params }) {
                         aria-current={active ? "true" : undefined}
                         className={`flex min-w-20 flex-col items-center rounded-md border-2 px-3 py-1.5 text-center transition ${
                           active ? "border-brand bg-brand-tint" : "border-line hover:border-ink-3"
-                        } ${v.stock > 0 || v.onlineSale === false ? "" : "opacity-60"}`}
+                        } ${v.stock > 0 ? "" : "opacity-60"}`}
                       >
                         <span className="text-[13px] font-semibold text-ink">{v.unit}</span>
                         <span className="text-xs tabular-nums text-ink-2">₹{v.price.toLocaleString("en-IN")}</span>
@@ -215,36 +193,18 @@ export default async function ProductPage({ params }) {
           )}
 
           <div className="mt-5 flex items-center gap-2">
-            <StockBadge stock={product.stock} restriction={restriction} verbose />
+            <StockBadge stock={product.stock} verbose />
           </div>
 
           <div className="mt-3">
-            {restriction ? (
-              <SaleRestrictionNotice sku={product.sku} name={product.name} restriction={restriction} />
-            ) : (
-              <BuyBox sku={product.sku} name={product.name} stock={product.stock} />
-            )}
+            <BuyBox sku={product.sku} name={product.name} stock={product.stock} />
           </div>
 
           <div className="mt-6 border-t border-line pt-4">
-            {restriction ? (
-              <>
-                <p className="mb-2 text-[13px] font-semibold text-ink">Where to buy</p>
-                <p className="text-[13px] leading-5 text-ink-2">
-                  Not shipped through the website. Collect from our Jaipur store ({store.address}) or ask the institutional desk
-                  for a quotation — {SITE.helpline.hours}.
-                </p>
-              </>
-            ) : (
-              <>
-                <p className="mb-2 text-[13px] font-semibold text-ink">Delivery</p>
-                <PinCheck />
-                {product.stateRestrictions?.length > 0 && (
-                  <p className="mt-2 text-xs text-ink-2">
-                    Not available for delivery to: {product.stateRestrictions.join(", ")}.
-                  </p>
-                )}
-              </>
+            <p className="mb-2 text-[13px] font-semibold text-ink">Delivery</p>
+            <PinCheck />
+            {product.stateRestrictions?.length > 0 && (
+              <p className="mt-2 text-xs text-ink-2">Not available for delivery to: {product.stateRestrictions.join(", ")}.</p>
             )}
           </div>
 
@@ -316,15 +276,11 @@ export default async function ProductPage({ params }) {
             <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-earth" strokeWidth={1.75} aria-hidden="true" />
             <div className="text-[13px] leading-6 text-ink">
               <p className="font-bold">Always read and follow the label.</p>
-              <p>
-                {isCropProtection
-                  ? SITE.labelDisclaimer
-                  : "Use this product only as described on its label and in the manufacturer's instructions. Keep away from children, food and animal feed."}
-              </p>
+              <p>{SITE.labelDisclaimer}</p>
             </div>
           </div>
           <ul className="mt-3 grid gap-1.5 text-[13px] text-ink sm:grid-cols-2">
-            {(SAFETY[product.category] ?? SAFETY["Crop Protection"]).map((line) => (
+            {(SAFETY[product.category] ?? GENERIC_SAFETY).map((line) => (
               <li key={line}>• {line}</li>
             ))}
           </ul>

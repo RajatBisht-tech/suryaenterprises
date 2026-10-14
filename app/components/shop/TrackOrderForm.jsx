@@ -101,7 +101,7 @@ export default function TrackOrderForm() {
           <ol className="mt-3 space-y-3 text-[13px]">
             {[
               ["Payment confirmed", "Your order ID is created and the payment is verified with PayU."],
-              ["Packed for dispatch", `Typically within ${SITE.policies.shipping.dispatchWindow}, in sealed hazardous-goods packaging.`],
+              ["Packed for dispatch", `Typically within ${SITE.policies.shipping.dispatchWindow}, in sealed manufacturer packaging.`],
               ["Handed to carrier", "We share the carrier and consignment number by SMS or email."],
               ["Delivered", `Check the parcel on arrival and report issues within ${SITE.policies.returns.claimWindowDays} days.`],
             ].map(([title, text], i) => (

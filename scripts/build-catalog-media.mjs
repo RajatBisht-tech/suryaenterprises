@@ -1,7 +1,12 @@
 // Publish the downloaded product photos as compressed static assets. Run this
 // when the catalog or its photos change; deployments only validate the result.
+//
+//   node scripts/build-catalog-media.mjs          # (re)encode photos for every family in products.json
+//   node scripts/build-catalog-media.mjs --check  # validate the manifest + files (prebuild / predev)
+//   node scripts/build-catalog-media.mjs --prune  # drop families no longer in products.json from the
+//                                                 # manifest and delete their photos (no re-encoding)
 import { createHash } from "node:crypto";
-import { existsSync, readFileSync, statSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync, statSync, unlinkSync } from "node:fs";
 import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
@@ -78,10 +83,44 @@ function checkMedia(catalog, media) {
   console.log(`[catalog-media] ${Object.keys(media.products).length} families, ${images.size} photos, ${(bytes / 1048576).toFixed(1)} MB; all ${catalog.length} listings have production photos`);
 }
 
+// Keep only the families that are still in the catalogue; delete every photo
+// under public/assets/catalog that no remaining family references. Used after
+// products were removed from the catalogue (app/config/catalog-exclusions.js).
+async function pruneMedia(catalog, media) {
+  const families = new Set(catalog.map((product) => product.family));
+  const kept = {};
+  let droppedFamilies = 0;
+  for (const [family, images] of Object.entries(media.products)) {
+    if (families.has(family)) kept[family] = images;
+    else droppedFamilies += 1;
+  }
+  const referenced = new Set(Object.values(kept).flat().map((image) => path.basename(image)));
+  const outputDir = path.join(PUBLIC_DIR, "assets/catalog");
+  let removedFiles = 0;
+  let removedBytes = 0;
+  for (const file of readdirSync(outputDir)) {
+    if (referenced.has(file)) continue;
+    const full = path.join(outputDir, file);
+    removedBytes += statSync(full).size;
+    unlinkSync(full);
+    removedFiles += 1;
+  }
+  const pruned = { ...media, products: kept };
+  const json = JSON.stringify(pruned) + "\n";
+  if (readFileSync(MEDIA_FILE, "utf8") !== json) await writeFile(MEDIA_FILE, json);
+  console.log(`[catalog-media] pruned ${droppedFamilies} families from the manifest; deleted ${removedFiles} unreferenced photos (${(removedBytes / 1048576).toFixed(1)} MB)`);
+  return pruned;
+}
+
 async function main() {
   const catalog = JSON.parse(readFileSync(CATALOG_FILE, "utf8"));
   if (process.argv.includes("--check")) {
     checkMedia(catalog, JSON.parse(readFileSync(MEDIA_FILE, "utf8")));
+    return;
+  }
+  if (process.argv.includes("--prune")) {
+    const media = await pruneMedia(catalog, JSON.parse(readFileSync(MEDIA_FILE, "utf8")));
+    checkMedia(catalog, media);
     return;
   }
   const { sources } = buildCatalog(loadSource(), { licensedMedia: false });

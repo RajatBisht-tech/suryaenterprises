@@ -41,6 +41,9 @@ export default function CartPage() {
   const cart = useCart();
   const hydrated = useCartHydrated();
 
+  // SKUs that are no longer in the catalogue have no index entry: they are
+  // skipped here (never crash) and <CartGuard /> removes them from the saved
+  // cart with a toast naming the SKU.
   const items = Object.entries(cart)
     .map(([sku, quantity]) => ({ product: getProduct(sku), quantity: Number(quantity) || 0 }))
     .filter((item) => item.product && item.quantity > 0);
@@ -107,7 +110,7 @@ export default function CartPage() {
                         <span className="text-lg font-bold text-ink">{formatPrice(p.price * quantity)}</span>
                         {quantity > 1 && <span className="text-xs text-ink-2">{formatPrice(p.price)} each</span>}
                       </div>
-                      <StockBadge stock={p.stock} restriction={p.onlineSale === false ? p.restriction ?? {} : null} />
+                      <StockBadge stock={p.stock} />
                       <div className="mt-2 flex flex-wrap gap-x-3 text-[13px] font-semibold uppercase tracking-wide">
                         <button
                           type="button"

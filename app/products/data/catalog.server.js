@@ -1,18 +1,21 @@
 // Server-only catalogue access for marketplace pages (home, listing, search,
-// product detail, search suggestions). The full ~11 MB catalogue never reaches
-// the browser: pages read from here and pass only the rendered page of results
+// product detail, search suggestions). The full catalogue never reaches the
+// browser: pages read from here and pass only the rendered page of results
 // (as plain "card" objects) to client components.
 //
 // Data model (app/products/data/products.json, one record per pack size):
 //   category (level-1, see config/taxonomy.js) > subcategory (level-2, from
 //   the data) ; brand ; crop (seeds) ; family = product-level key shared by
 //   the pack sizes of one product.
+//
+// Everything in products.json is for sale online: goods the business does not
+// sell (app/config/catalog-exclusions.js) are removed at import time and the
+// build refuses to ship a catalogue that still contains one.
 import "server-only";
 import productsData from "./products.json";
 import catalogMedia from "./catalog-media.json";
 import { withCatalogMedia } from "./catalog-media.mjs";
-import { applySaleRestriction, saleFacts } from "./sale-restrictions.mjs";
-import { CATEGORIES, categoryByData, categoryBySlug, slugify } from "../../config/taxonomy";
+import { CATEGORIES, SHOP_BY_NEED, categoryByData, categoryBySlug, slugify } from "../../config/taxonomy";
 import { getReference } from "./reference-overlay.server";
 
 export const PAGE_SIZE = 24;
@@ -38,22 +41,19 @@ export function packSizeValue(unit) {
   return Number(match[1]) * (UNIT_FACTORS[match[2].toLowerCase()] ?? 1);
 }
 
-// Every record passes through applySaleRestriction (app/config/sale-restrictions.js):
-// pesticides, PGRs, urea, animal-husbandry goods, knives and agricultural
-// chemicals get onlineSale:false + stock:0 + restriction. products.json itself
-// is never edited.
+// Every record carries its published photos (catalog-media.json).
 const records = productsData.map((entry, order) => {
-  const product = applySaleRestriction(withCatalogMedia(entry, catalogMedia));
+  const product = withCatalogMedia(entry, catalogMedia);
   return {
-  product,
-  order,
-  categorySlug: categoryByData[product.category]?.slug ?? null,
-  subcategorySlug: slugify(product.subcategory),
-  nameTokens: tokenize(product.name),
-  nameText: normalize(product.name),
-  brandText: normalize(product.brand),
-  metaText: normalize([product.subcategory, product.crop, product.productType, product.category].filter(Boolean).join(" ")),
-  descText: normalize(product.description),
+    product,
+    order,
+    categorySlug: categoryByData[product.category]?.slug ?? null,
+    subcategorySlug: slugify(product.subcategory),
+    nameTokens: tokenize(product.name),
+    nameText: normalize(product.name),
+    brandText: normalize(product.brand),
+    metaText: normalize([product.subcategory, product.crop, product.productType, product.category].filter(Boolean).join(" ")),
+    descText: normalize(product.description),
   };
 });
 
@@ -68,28 +68,20 @@ for (const r of records) {
   byFamily.set(r.product.family, fam);
 }
 
-// categorySlug -> [{ slug, name, count, onlineCount, storeOnly }] sorted by
-// count desc. `storeOnly` = every listing in the subcategory is restricted.
+// categorySlug -> [{ slug, name, count }] sorted by count desc.
 const subcategoriesByCategory = new Map();
 for (const c of CATEGORIES) {
   const counts = new Map();
   for (const r of byCategory.get(c.slug)) {
-    const entry = counts.get(r.subcategorySlug) ?? { slug: r.subcategorySlug, name: r.product.subcategory, count: 0, onlineCount: 0 };
+    const entry = counts.get(r.subcategorySlug) ?? { slug: r.subcategorySlug, name: r.product.subcategory, count: 0 };
     entry.count += 1;
-    if (r.product.onlineSale) entry.onlineCount += 1;
     counts.set(r.subcategorySlug, entry);
   }
   subcategoriesByCategory.set(
     c.slug,
-    [...counts.values()]
-      .map((entry) => ({ ...entry, storeOnly: entry.onlineCount === 0 }))
-      .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name))
+    [...counts.values()].sort((a, b) => b.count - a.count || a.name.localeCompare(b.name))
   );
 }
-
-const sellable = (r) => r.product.onlineSale;
-// Sort key: online-sellable listings before store-only ones (stable).
-const sellableRank = (r) => (r.product.onlineSale ? 0 : 1);
 
 const sortDesc = (map) => [...map.entries()].sort((a, b) => b[1] - a[1] || String(a[0]).localeCompare(String(b[0])));
 
@@ -111,11 +103,8 @@ export function toCard(product) {
     category: product.category,
     subcategory: product.subcategory,
     brand: product.brand,
-    isOwnBrand: Boolean(product.isOwnBrand),
     rating: product.rating ?? null,
-    onlineSale: product.onlineSale !== false,
   };
-  if (product.restriction) card.restriction = product.restriction;
   if (product.mrp) card.mrp = product.mrp;
   if (product.reviewsCount) card.reviewsCount = product.reviewsCount;
   const ref = getReference(product.sku);
@@ -167,14 +156,9 @@ function distinctByFamily(list, limit) {
   return out;
 }
 
-// "Popularity": online-sellable first, then featured, then by name (no
-// ratings exist yet).
+// "Popularity": featured first, then by name (no ratings exist yet).
 const featuredRank = (r) => (r.product.isFeatured ? 0 : 1);
-const byPopularity = (a, b) =>
-  sellableRank(a) - sellableRank(b) ||
-  featuredRank(a) - featuredRank(b) ||
-  a.product.name.localeCompare(b.product.name) ||
-  a.order - b.order;
+const byPopularity = (a, b) => featuredRank(a) - featuredRank(b) || a.product.name.localeCompare(b.product.name) || a.order - b.order;
 
 // Small deterministic hash so "Customers also viewed" is stable per product.
 function hash(str) {
@@ -204,21 +188,16 @@ export function getNavCategories() {
       unitCounts.set(r.product.unit, (unitCounts.get(r.product.unit) ?? 0) + 1);
     }
     const subcategories = getSubcategories(category.slug);
-    const onlineCount = list.filter(sellable).length;
     return {
       slug: category.slug,
       name: category.name,
       shortName: category.shortName ?? category.name,
       need: category.need,
-      tileNote: category.tileNote ?? null,
       icon: category.icon,
       tint: category.tint,
       description: category.description,
       illustration: category.illustration ?? null,
       count: list.length,
-      // Listings that can actually be bought online; storeOnly when none can.
-      onlineCount,
-      storeOnly: onlineCount === 0,
       subcategoryCount: subcategories.length,
       subcategories: subcategories.slice(0, 10),
       brandCount: brandCounts.size,
@@ -234,23 +213,44 @@ export function getNavCategories() {
   return navCache;
 }
 
+let needCache = null;
+
+// Home "Shop by need" tiles (config/taxonomy.js SHOP_BY_NEED) with live
+// listing counts. A tile with `subcategories` links to the category listing
+// pre-filtered to those subcategories (only the ones that exist in the data).
+export function getShopByNeed() {
+  if (needCache) return needCache;
+  needCache = SHOP_BY_NEED.map((need) => {
+    const list = getCategoryProducts(need.category);
+    if (!need.subcategories) {
+      return { slug: need.slug, title: need.title, note: need.note, illustration: need.illustration, href: `/c/${need.category}`, count: list.length };
+    }
+    const wanted = new Set(need.subcategories.map(slugify));
+    const present = getSubcategories(need.category).filter((s) => wanted.has(s.slug));
+    const count = present.reduce((n, s) => n + s.count, 0);
+    const query = present.map((s) => `sub=${encodeURIComponent(s.slug)}`).join("&");
+    return {
+      slug: need.slug,
+      title: need.title,
+      note: need.note,
+      illustration: need.illustration,
+      href: present.length === 1 ? `/c/${need.category}/${present[0].slug}` : `/c/${need.category}${query ? `?${query}` : ""}`,
+      count,
+    };
+  });
+  return needCache;
+}
+
 let statsCache = null;
 
-// Catalogue totals. `online*` figures count only online-sellable listings
-// (same computation as the business-profile PDF: saleFacts).
+// Catalogue totals (listings, products = families, brands, subcategories).
 export function getCatalogStats() {
   if (statsCache) return statsCache;
-  const facts = saleFacts(records.map((r) => r.product));
   statsCache = {
     total: records.length,
     products: byFamily.size,
     brands: new Set(records.map((r) => r.product.brand)).size,
     subcategories: [...subcategoriesByCategory.values()].reduce((n, list) => n + list.length, 0),
-    onlineTotal: facts.online.skus,
-    onlineProducts: facts.online.products,
-    onlineBrands: facts.online.brands,
-    restrictedTotal: facts.restricted.skus,
-    restrictedProducts: facts.restricted.products,
   };
   return statsCache;
 }
@@ -264,43 +264,39 @@ export function getTopBrands(limit = 12) {
     .map(([name, count]) => ({ name, count }));
 }
 
-// Landing page rails contain ONLY online-sellable products. "Featured" =
-// isFeatured AND onlineSale, topped up deterministically (popularity order,
-// one per family) from the rest of the sellable catalogue so the rail stays
-// full when featured items are restricted.
+// Landing page rails. "Featured" = isFeatured, topped up deterministically
+// (popularity order, one per family) from the rest of the catalogue so the
+// rail stays full.
 export function getHomeRails() {
-  const sellableRecords = records.filter(sellable);
-  const featuredPicks = distinctByFamily(sellableRecords.filter((r) => r.product.isFeatured).sort(byPopularity), 16);
   const RAIL = 16;
+  const featuredPicks = distinctByFamily(records.filter((r) => r.product.isFeatured).sort(byPopularity), RAIL);
   if (featuredPicks.length < RAIL) {
     const taken = new Set(featuredPicks.map((r) => r.product.family));
     const topUp = distinctByFamily(
-      [...sellableRecords].sort(byPopularity).filter((r) => !taken.has(r.product.family)),
+      [...records].sort(byPopularity).filter((r) => !taken.has(r.product.family)),
       RAIL - featuredPicks.length
     );
     featuredPicks.push(...topUp);
   }
   const under500 = distinctByFamily(
-    sellableRecords.filter((r) => r.product.price < 500).sort(byPopularity),
+    records.filter((r) => r.product.price < 500).sort(byPopularity),
     RAIL
   );
   const perCategory = CATEGORIES.map((category) => ({
     slug: category.slug,
     name: category.name,
-    items: distinctByFamily(getCategoryProducts(category.slug).filter(sellable).sort(byPopularity), 14).map((r) => toCard(r.product)),
+    items: distinctByFamily([...getCategoryProducts(category.slug)].sort(byPopularity), 14).map((r) => toCard(r.product)),
   }));
-  const featured = featuredPicks;
   return {
-    featured: featured.map((r) => toCard(r.product)),
+    featured: featuredPicks.map((r) => toCard(r.product)),
     under500: under500.map((r) => toCard(r.product)),
     perCategory,
   };
 }
 
-// Online-sellable picks across categories (/products). Categories with no
-// sellable products contribute nothing; the others fill the gap.
+// Picks across categories (/products): an even share from every category.
 export function getTopPicks(limit = 12) {
-  const pools = CATEGORIES.map((c) => getCategoryProducts(c.slug).filter(sellable).sort(byPopularity)).filter((pool) => pool.length);
+  const pools = CATEGORIES.map((c) => [...getCategoryProducts(c.slug)].sort(byPopularity)).filter((pool) => pool.length);
   const perCat = Math.ceil(limit / Math.max(1, pools.length));
   return pools
     .flatMap((pool) => distinctByFamily(pool, perCat))
@@ -322,10 +318,9 @@ export function getPackVariants(product) {
       return true;
     })
     .sort((a, b) => packSizeValue(a.product.unit) - packSizeValue(b.product.unit) || a.order - b.order)
-    .map((r) => ({ slug: r.product.slug, unit: r.product.unit, price: r.product.price, stock: r.product.stock, onlineSale: r.product.onlineSale }));
+    .map((r) => ({ slug: r.product.slug, unit: r.product.unit, price: r.product.price, stock: r.product.stock }));
 }
 
-// Related rails prefer online-sellable products (byPopularity ranks them first).
 export function getSimilarProducts(product, limit = 14) {
   const same = records.filter(
     (r) => r.product.category === product.category && r.product.subcategory === product.subcategory && r.product.family !== product.family
@@ -338,7 +333,7 @@ export function getAlsoViewed(product, limit = 14) {
   const pool = records
     .filter((r) => r.product.category === product.category && r.product.family !== product.family)
     .map((r) => ({ r, k: hash(`${seed}:${r.product.sku}`) }))
-    .sort((a, b) => sellableRank(a.r) - sellableRank(b.r) || a.k - b.k)
+    .sort((a, b) => a.k - b.k)
     .map((x) => x.r);
   return distinctByFamily(pool, limit).map((r) => toCard(r.product));
 }
@@ -428,8 +423,7 @@ function passes(record, f, skip) {
     if (f.max != null && p.price > f.max) return false;
   }
   if (skip !== "unit" && f.units.length && !f.units.includes(p.unit)) return false;
-  // "Available online": in stock AND not restricted to the store.
-  if (skip !== "stock" && f.inStock && !(p.stock > 0 && p.onlineSale)) return false;
+  if (skip !== "stock" && f.inStock && !(p.stock > 0)) return false;
   return true;
 }
 
@@ -482,30 +476,25 @@ export function queryListing({ scope, categorySlug, subcategorySlug, params }) {
 
   const matched = base.filter(({ record }) => passes(record, filters));
 
-  // Within every sort, online-sellable listings come first (stable: ties keep
-  // the sort's own order, then catalogue order).
-  const online = (a, b) => sellableRank(a.record) - sellableRank(b.record);
   const sorters = {
-    relevance: (a, b) => online(a, b) || b.score - a.score || byPopularity(a.record, b.record),
+    relevance: (a, b) => b.score - a.score || byPopularity(a.record, b.record),
     popularity: (a, b) => byPopularity(a.record, b.record),
-    price_asc: (a, b) => online(a, b) || a.record.product.price - b.record.product.price || a.record.order - b.record.order,
-    price_desc: (a, b) => online(a, b) || b.record.product.price - a.record.product.price || a.record.order - b.record.order,
-    newest: (a, b) =>
-      online(a, b) || String(b.record.product.createdAt).localeCompare(String(a.record.product.createdAt)) || b.record.order - a.record.order,
+    price_asc: (a, b) => a.record.product.price - b.record.product.price || a.record.order - b.record.order,
+    price_desc: (a, b) => b.record.product.price - a.record.product.price || a.record.order - b.record.order,
+    newest: (a, b) => String(b.record.product.createdAt).localeCompare(String(a.record.product.createdAt)) || b.record.order - a.record.order,
   };
   // Category pages without a query: "relevance" (labelled "Featured") = popularity.
   const sorter = params.sort === "relevance" && scope !== "search" ? sorters.popularity : sorters[params.sort];
   matched.sort(sorter);
 
   const total = matched.length;
-  const storeOnlyTotal = matched.reduce((n, { record }) => n + (record.product.onlineSale ? 0 : 1), 0);
   const pageCount = Math.max(1, Math.ceil(total / PAGE_SIZE));
   const page = Math.min(params.page, pageCount);
   const items = matched
     .slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
     .map(({ record }) => toCard(record.product));
 
-  return { items, total, storeOnlyTotal, page, pageCount, pageSize: PAGE_SIZE, facets, filters };
+  return { items, total, page, pageCount, pageSize: PAGE_SIZE, facets, filters };
 }
 
 // Up to 8 lightweight suggestions for the header search box.
@@ -520,9 +509,6 @@ export function suggest(query, categorySlug) {
     8
   ).map(({ product }) => {
     const card = toCard(product);
-    const item = { name: card.name, slug: card.slug, price: card.price, image: card.image, category: card.category, brand: card.brand };
-    // Marked "Store only" in the suggestion list.
-    if (!card.onlineSale) item.storeOnly = true;
-    return item;
+    return { name: card.name, slug: card.slug, price: card.price, image: card.image, category: card.category, brand: card.brand };
   });
 }

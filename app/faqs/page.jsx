@@ -96,16 +96,16 @@ const sections = [
           <p>{shipping.serviceableAreas} You can check your PIN on any product page.</p>
         </Faq>
         <Faq q="How soon will my order ship?">
-          <p>Orders are typically dispatched within {shipping.dispatchWindow} of payment confirmation. Transit time depends on the destination; bulky items such as sprayers and tarpaulins travel by surface transport.</p>
+          <p>Orders are typically dispatched within {shipping.dispatchWindow} of payment confirmation. Transit time depends on the destination; bulky items such as sprayers, tarpaulins and machinery travel by surface transport.</p>
         </Faq>
         <Faq q="What are the delivery charges?">
           <p>{shipping.charges}</p>
         </Faq>
         <Faq q="Why can't some products be delivered to my area?">
-          <p>{shipping.restrictedAreas} Some molecules are also restricted in particular states. If an item cannot be shipped to you, we cancel and refund it.</p>
+          <p>{shipping.restrictedAreas} A few seed varieties are also not notified for sale in particular states, and the product page lists those states. If an item cannot be shipped to you, we cancel and refund it.</p>
         </Faq>
         <Faq q="What should I check when the parcel arrives?">
-          <p>Check the outer box for damage or leakage before accepting it, then verify products, pack sizes, quantities and expiry dates against your order. Report any issue within {returns.claimWindowDays} days with photos.</p>
+          <p>Check the outer box for damage before accepting it, then verify products, pack sizes, quantities and (for seeds) the lot number and expiry date against your order. Report any issue within {returns.claimWindowDays} days with photos.</p>
         </Faq>
       </div>
     ),
@@ -117,8 +117,9 @@ const sections = [
       <div className="-mt-2">
         <Faq q="Can I return a product?">
           <p>
-            For safety, opened chemicals and seeds cannot be returned. Damaged, leaking, wrong, short or expired-on-arrival
-            items are replaced or refunded. See the <Link href="/return-refund-policy">Return &amp; Refund Policy</Link>.
+            Opened seed packets cannot be returned, and machinery can be returned only if it is unused and in its original
+            packaging. Damaged, wrong, short, defective or expired-on-arrival items are replaced or refunded. See the{" "}
+            <Link href="/return-refund-policy">Return &amp; Refund Policy</Link>.
           </p>
         </Faq>
         <Faq q="How do I raise a claim?">
@@ -131,68 +132,42 @@ const sections = [
           <p>Refunds go back to the original UPI account through PayU and normally arrive within {returns.refundTimeline} of approval.</p>
         </Faq>
         <Faq q="I ordered the wrong product by mistake.">
-          <p>If the order has not been dispatched, call us to cancel or change it. Once delivered, a sealed wrong-choice product cannot be returned, so please check the label and crop suitability before ordering.</p>
+          <p>If the order has not been dispatched, call us to cancel or change it. Once delivered, a sealed wrong-choice seed pack cannot be returned, so please check the crop, variety and pack size before ordering. Unused machinery in its original packaging can be returned within the claim window; return shipping is charged.</p>
+        </Faq>
+        <Faq q="Does machinery come with a warranty?">
+          <p>Sprayers, brush cutters, tillers, pumps and other equipment carry the manufacturer&apos;s warranty printed on the warranty card or manual in the box. Keep the invoice; warranty claims are handled with the manufacturer&apos;s service network, and our helpline can point you to the nearest one.</p>
         </Faq>
       </div>
     ),
   },
   {
-    id: "restricted",
-    title: "Products not sold online",
+    id: "products",
+    title: "Products",
     content: (
       <div className="-mt-2">
-        <Faq q="Why can't I buy pesticides or urea online?">
+        <Faq q="What do you sell?">
           <p>
-            Pesticides and agrochemicals (insecticides, fungicides, herbicides, bio-controls and plant growth regulators) are
-            regulated goods under the Insecticides Act, 1968, and urea and other subsidised fertilisers may be sold only
-            through licensed outlets under the Fertiliser (Control) Order, 1985. Payment gateways also list pesticides and
-            agricultural chemicals among regulated categories. We therefore do not sell them through the website: they are
-            marked “Not for online sale”, cannot be added to the cart, and are available at our Jaipur store (
-            {SITE.offices[0].address}) and through the <Link href="/products/institutional">institutional desk</Link> against a
-            valid requirement.
+            Three categories: <Link href="/c/seeds">seeds</Link> (vegetable, fruit, flower, field and forage seeds by crop and pack size),{" "}
+            <Link href="/c/traps-and-repellents">traps &amp; repellents</Link> (pheromone traps and lures, sticky traps and animal repellents) and{" "}
+            <Link href="/c/farm-machinery">farm machinery</Link> (sprayers, brush cutters, tillers, hand tools, tarpaulins, mulches, irrigation
+            and solar equipment). Every pack size is its own listing with its own price.
           </p>
         </Faq>
-        <Faq q="Which other products are store-only?">
+        <Faq q="Which seed or trap should I use for my crop?">
           <p>
-            Animal-husbandry products (cattle feed, milking equipment, poultry and fish care), adjuvants and other
-            agricultural chemicals, ammonium-nitrate products and knives are also sold only at the store and by quotation.
-            Seeds, traps &amp; lures, animal repellents, fertilisers, bio-fertilisers, biostimulants and farm machinery can
-            be bought online.
-          </p>
-        </Faq>
-        <Faq q="How do I buy a store-only product?">
-          <p>
-            Open the product page and use <strong>Institutional desk</strong> to send an enquiry quoting the SKU, call{" "}
-            {SITE.helpline.display} ({SITE.helpline.hours}), or visit the Jaipur store. Pesticides are handed over only in
-            sealed manufacturer packs with the CIB&amp;RC-approved label.
-          </p>
-        </Faq>
-      </div>
-    ),
-  },
-  {
-    id: "product-safety",
-    title: "Product safety",
-    content: (
-      <div className="-mt-2">
-        <Faq q="Which product should I use for my crop or pest?">
-          <p>
-            We cannot give field-specific recommendations. Use only the crops, pests and doses stated on the
-            CIB&amp;RC-approved label, and consult an agricultural extension officer or Krishi Vigyan Kendra when unsure.
-            Our helpline can help you find a product by active ingredient or pack size.
+            We cannot give field-specific recommendations. Choose varieties suited to your region and season as printed on the
+            packet, place traps as the manufacturer directs, and consult an agricultural extension officer or Krishi Vigyan Kendra
+            when unsure. Our helpline can help you find a product by crop, brand or pack size.
           </p>
         </Faq>
         <Faq q="Are your products genuine?">
-          <p>Yes. {SITE.name} is a licensed agro-inputs marketplace selling genuine products from leading brands and Surya&apos;s own range; nothing is sourced from unknown resellers. Products made by Surya are marked “Manufacturer direct” on their page. Each pack carries the manufacturer&apos;s registration, batch number and expiry where applicable.</p>
+          <p>Yes. {SITE.name} is a licensed agri-inputs marketplace selling genuine products from leading brands; nothing is sourced from unknown resellers. Each pack carries the manufacturer&apos;s name, batch or lot number and, for seeds, the germination and expiry details required by law.</p>
         </Faq>
-        <Faq q="How should I store pesticides at home or on the farm?">
-          <p>In the original, closed container; in a cool, dry, locked place; away from children, animals, food, feed and water. Details are in our <Link href="/product-safety-disclaimer">Product Safety Disclaimer</Link>.</p>
-        </Faq>
-        <Faq q="What do I do in case of accidental exposure or poisoning?">
-          <p>Follow the first-aid instructions on the label, and call a doctor or go to the nearest hospital immediately, taking the label with you. The AIIMS Poison Information Centre helpline is 1800-116-117.</p>
+        <Faq q="How should I store seeds?">
+          <p>Keep unopened packets in a cool, dry place away from direct sunlight, moisture and rodents, and use them before the expiry date printed on the pack. Treated seeds are not for food, feed or oil extraction.</p>
         </Faq>
         <Faq q="Can I resell products bought here?">
-          <p>Resale of seeds, fertilisers and pesticides requires the relevant licence from your State Agriculture Department. Buy for resale only if you hold one. See our <Link href="/terms">Terms of Use</Link>.</p>
+          <p>Resale of seeds requires a seed licence from your State Agriculture Department. Buy for resale only if you hold one. Dealers and co-operatives can order in volume through our <Link href="/products/institutional">institutional desk</Link>. See our <Link href="/terms">Terms of Use</Link>.</p>
         </Faq>
       </div>
     ),
@@ -204,7 +179,7 @@ export default function FaqsPage() {
     <PolicyLayout
       eyebrow="Help"
       title="Frequently Asked Questions"
-      intro="Quick answers about ordering, paying, delivery, returns, products that are sold only at our store, and product safety on the Surya Enterprises marketplace."
+      intro="Quick answers about ordering, paying, delivery, returns and the seeds, traps and farm machinery sold on the Surya Enterprises marketplace."
       sections={sections}
       related={[
         { name: "Track order", href: "/track-order" },

@@ -4,7 +4,7 @@
 //
 // Rules: templated, factual, no marketing claims, no copied text. Templates
 // vary by level-1 category: seeds mention crop & pack, machinery the product
-// type, nutrition the application, crop protection the label / CIB&RC rule.
+// type, traps & repellents the pack and placement guidance.
 
 const END = "Always read the product label before use.";
 
@@ -17,18 +17,11 @@ const TEMPLATES = {
       "Sow as directed on the packet; store unopened in a cool, dry place.",
       END,
     ],
-  "Crop Protection": (r) =>
+  "Traps & Repellents": (r) =>
     [
       `${r.baseName} by ${r.brand} — ${r.subcategory} (${r.category}).`,
       `Pack size: ${r.unit}.`,
-      "Use only on the crops and at the doses stated on the CIB&RC-approved label; keep away from children, food and feed.",
-      END,
-    ],
-  "Crop Nutrition": (r) =>
-    [
-      `${r.baseName} by ${r.brand} — ${r.subcategory} (${r.category}).`,
-      `Pack size: ${r.unit}.`,
-      "Apply at the rate, timing and method printed on the label for the crop and growth stage.",
+      "Place or apply as directed on the pack; replace lures and sticky sheets at the interval the manufacturer states.",
       END,
     ],
   "Farm Machinery": (r) =>
@@ -37,13 +30,6 @@ const TEMPLATES = {
       r.productType && r.productType !== r.category ? `Product type: ${r.productType}.` : null,
       `Unit: ${r.unit}.`,
       "Operate and maintain as described in the manufacturer's instructions.",
-      END,
-    ],
-  "Animal Husbandry": (r) =>
-    [
-      `${r.baseName} by ${r.brand} — ${r.subcategory} (${r.category}).`,
-      `Pack size: ${r.unit}.`,
-      "Use as directed on the label; consult a veterinarian for dosage where applicable.",
       END,
     ],
 };

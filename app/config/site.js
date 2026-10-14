@@ -21,7 +21,7 @@ export const SITE = {
   shortLabel: "Agri Marketplace",
   tagline: "India's biggest agriculture marketplace",
   // One-line mission shown in the footer brand block.
-  mission: "Genuine agri-inputs from leading brands and Surya's own range — for farmers, agri-retailers and institutional buyers.",
+  mission: "Genuine seeds, traps & repellents and farm machinery from leading brands — for farmers, agri-retailers and institutional buyers.",
   // Brand artwork supplied by the owner (public/assets/brand). `logo` is the
   // whitespace-trimmed copy used in the UI; the square favicon is app/icon.png.
   logo: "/assets/brand/surya-logo-wide.png",
@@ -92,13 +92,13 @@ export const SITE = {
 
   // Label disclaimer shown in "Safety & usage" on every product page.
   labelDisclaimer:
-    "Always read and follow the label and leaflet approved by the CIB&RC before use. Use only on the crops and at the doses stated on the product label. Keep away from children, food and animal feed.",
+    "Always read and follow the packet, label or manual supplied with the product. Use only as the manufacturer directs. Keep away from children, food and animal feed.",
 
   // Trust bar items (home page). `icon` is a key resolved in
   // components/shop/TrustBar.jsx. PLACEHOLDER — edit wording to match ops.
   trust: [
-    { icon: "shield", title: "Genuine products", text: "From leading brands and Surya's own range" },
-    { icon: "label", title: "Licensed agro-inputs marketplace", text: "Sealed packs, label-compliant guidance" },
+    { icon: "shield", title: "Genuine products", text: "From leading seed, trap and machinery brands" },
+    { icon: "label", title: "Licensed agri-inputs marketplace", text: "Sealed manufacturer packs" },
     { icon: "upi", title: "Secure UPI payments", text: "UPI via PayU" },
     { icon: "phone", title: "Helpline", text: HELPLINE_HOURS },
   ],
@@ -124,18 +124,18 @@ export const SITE = {
       enabled: true,
     },
     // Example of how to add a real one once obtained:
-    // { id: "cibrc", name: "CIB&RC registered", detail: "Reg. no. …", image: "/assets/images/cibrc.png", href: "/quality-assurance", enabled: false },
+    // { id: "bis", name: "BIS licence", detail: "Lic. no. …", image: "/assets/images/bis.png", href: "/quality-assurance", enabled: false },
   ],
-  // Agro-input sales licences held by the business (state pesticide / seed /
-  // fertiliser sale licences). Rendered on the About page and in the company
+  // Agri-input trade licences held by the business (state seed sale licence,
+  // shop & establishment, etc.). Rendered on the About page and in the company
   // profile PDF ONLY when filled — leave empty until the owner supplies the
   // real numbers. Shape:
-  //   { authority: "Directorate of Agriculture, Rajasthan", number: "…", scope: "Insecticides (retail)", validTill: "YYYY-MM-DD" }
+  //   { authority: "Directorate of Agriculture, Rajasthan", number: "…", scope: "Seeds (retail)", validTill: "YYYY-MM-DD" }
   licences: [],
 
   // Factual chips next to the certifications. `icon` keys: factory, upi, receipt, shield, phone.
   trustChips: [
-    { icon: "shield", text: "Licensed agro-inputs marketplace" },
+    { icon: "shield", text: "Licensed agri-inputs marketplace" },
     { icon: "upi", text: "Secure UPI via PayU" },
     { icon: "receipt", text: "GST invoice" },
   ],
@@ -146,25 +146,23 @@ export const SITE = {
   // -------------------------------------------------------------------------
   // Offers ticker (home page, under the header). Only enabled items render.
   // Keep items FACTUAL — they are shown to every visitor. To add a real sale:
-  //   { text: "Monsoon sale: 10% off all fungicides till 31 July", href: "/c/crop-protection/fungicides", icon: "tag", enabled: true },
+  //   { text: "Monsoon sale: 10% off all sprayers till 31 July", href: "/c/farm-machinery/sprayers", icon: "tag", enabled: true },
   // `icon` keys: sprout, upi, building, tag, package, truck, phone.
+  // Only advertise what is in the catalogue: seeds, traps & repellents, farm machinery.
   // -------------------------------------------------------------------------
   offersSiteWide: false, // true shows the ticker on every page, false = home only
-  // Pesticides, urea and other regulated goods are NOT sold online (see
-  // config/sale-restrictions.js) — never advertise them as shoppable here.
   offers: [
-    { text: "Genuine products from Syngenta, Namdhari Seeds, East West, Bayer, Dhanuka & more, alongside Surya's own range", href: "/products", icon: "sprout", enabled: true },
+    { text: "Genuine products from Syngenta, Namdhari Seeds, East West, Bayer, Barrix, KisanKraft & more", href: "/products", icon: "sprout", enabled: true },
     { text: "Pay securely with UPI via PayU", href: "/payment-policy", icon: "upi", enabled: true },
-    { text: "Pesticides & urea: available at our Jaipur store and by quotation", href: "/faqs#restricted", icon: "building", enabled: true },
-    { text: "Bulk & institutional orders — request a quote", href: "/products/institutional", icon: "building", enabled: true },
+    { text: "Bulk seeds, sprayers, tarpaulins & equipment for institutions — request a quote", href: "/products/institutional", icon: "building", enabled: true },
     { text: "Shop products under ₹500", href: "/search?max=500&sort=popularity", icon: "tag", enabled: true },
-    { text: "Seeds, traps & lures, crop nutrition and farm machinery online — every pack size", href: "/products", icon: "package", enabled: true },
+    { text: "Seeds, traps & repellents and farm machinery online — every pack size", href: "/products", icon: "package", enabled: true },
   ],
 
   // -------------------------------------------------------------------------
   // Promotional carousel (home page). Only enabled slides render.
   // theme: "green" | "harvest" | "earth"
-  // art:   "pest" | "weed" | "disease" | "growth" | "warehouse"
+  // art:   "pest" | "growth" | "seeds" | "sprayer" | "tarpaulin" | "tools" | "warehouse"
   // badge: optional short label ("SALE", "-20%") — renders ONLY when set.
   // -------------------------------------------------------------------------
   promotions: [
@@ -185,37 +183,15 @@ export const SITE = {
       cta: "Shop seeds",
       href: "/c/seeds",
       theme: "green",
-      art: "growth",
+      art: "seeds",
       enabled: true,
     },
     {
-      // Replaced the herbicides slide: pesticides are not sold online.
-      id: "soil-health",
-      title: "Bio-fertilisers & biostimulants",
-      subtitle: "Soil and plant health inputs by brand and pack size.",
-      cta: "Shop bio-fertilisers",
-      href: "/c/crop-nutrition/bio-fertilizers",
-      theme: "earth",
-      art: "growth",
-      enabled: true,
-    },
-    {
-      id: "bulk",
-      title: "Bulk buying for institutions",
-      subtitle: "Technical grades with listed purity — quotes on request.",
-      cta: "Get a quote",
-      href: "/products/institutional",
-      theme: "green",
-      art: "warehouse",
-      enabled: true,
-    },
-    {
-      // Replaced the insecticides slide: pesticides are not sold online.
       id: "traps-lures",
       title: "Traps, lures & repellents",
-      subtitle: "Pheromone lures, sticky traps and animal repellents — chemical-free pest control.",
+      subtitle: "Pheromone lures, sticky traps and animal repellents — chemical-free crop care.",
       cta: "Shop traps & lures",
-      href: "/c/crop-protection/traps-and-lures",
+      href: "/c/traps-and-repellents/traps-and-lures",
       theme: "harvest",
       art: "pest",
       enabled: true,
@@ -227,15 +203,35 @@ export const SITE = {
       cta: "Shop sprayers",
       href: "/c/farm-machinery/sprayers",
       theme: "green",
-      art: "warehouse",
+      art: "sprayer",
+      enabled: true,
+    },
+    {
+      id: "tarpaulins",
+      title: "Tarpaulins, mulches & nets",
+      subtitle: "HDPE tarpaulins, mulch film, shade nets and crop covers by size.",
+      cta: "Shop tarpaulins",
+      href: "/c/farm-machinery/tarpaulin",
+      theme: "earth",
+      art: "tarpaulin",
       enabled: true,
     },
     {
       id: "machinery",
-      title: "Tools & covers",
-      subtitle: "Brush cutters, tillers, hand tools, tarpaulins and mulches.",
+      title: "Tools & equipment",
+      subtitle: "Brush cutters, tillers, hand tools, pumps and irrigation gear.",
       cta: "Shop farm machinery",
       href: "/c/farm-machinery",
+      theme: "green",
+      art: "tools",
+      enabled: true,
+    },
+    {
+      id: "bulk",
+      title: "Bulk buying for institutions",
+      subtitle: "Bulk seeds, sprayers, tarpaulins and equipment — quotes on request.",
+      cta: "Get a quote",
+      href: "/products/institutional",
       theme: "earth",
       art: "warehouse",
       enabled: true,
@@ -277,10 +273,6 @@ export const SITE = {
       // PLACEHOLDER — locations that cannot be served or need extra time (ODA note).
       restrictedAreas:
         "Remote, hilly, island and out-of-delivery-area (ODA) PIN codes may take longer or may not be serviceable for bulky consignments.",
-      // Pesticides and other regulated goods are not sold or shipped through the
-      // website (config/sale-restrictions.js); this note explains where they are sold.
-      hazardousNote:
-        "Pesticides, plant growth regulators, urea and other regulated agrochemicals are not sold or shipped through the website. They are available at our Jaipur store and through the institutional desk, where they are handed over only in sealed, labelled manufacturer packaging. Products shipped from online orders (seeds, traps & lures, fertilisers, bio-inputs, machinery) travel by courier or surface transport.",
     },
     returns: {
       // PLACEHOLDER — days from delivery within which a claim must be raised.

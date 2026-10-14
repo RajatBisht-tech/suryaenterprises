@@ -3,8 +3,8 @@
 //   node scripts/build-product-index.mjs                  # clean index (prebuild / predev)
 //   node scripts/build-product-index.mjs --with-reference # LOCAL dev only (npm run dev:reference)
 //
-// The full catalogue (app/products/data/products.json, ~11 MB) stays on the
-// server (see app/products/data/catalog.server.js). Client code that needs a
+// The full catalogue (app/products/data/products.json) stays on the server
+// (see app/products/data/catalog.server.js). Client code that needs a
 // synchronous getProduct(sku) — the cart, wishlist and the frozen checkout
 // page — reads this slim index instead, so their bundles stay small.
 //
@@ -15,14 +15,15 @@
 // localhost. It refuses to run with NODE_ENV=production.
 //
 // Also a CI-style guard: the committed catalogue may contain ONLY our own
-// factual text and local imagery. The build fails if products.json (or
-// the production index) carries any source-site string, any development
-// reference-image path or an image outside /assets.
+// factual text and local imagery, and NOTHING on the exclusion list
+// (app/config/catalog-exclusions.js). The build fails if products.json (or the
+// production index) carries any source-site string, any development
+// reference-image path, an image outside /assets, or an excluded record.
 import { existsSync, readFileSync } from "node:fs";
 import { readFile, writeFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import { withCatalogMedia, validateCatalogMedia } from "../app/products/data/catalog-media.mjs";
-import { applySaleRestriction } from "../app/products/data/sale-restrictions.mjs";
+import { exclusionFor } from "../app/products/data/catalog-exclusions.mjs";
 import path from "node:path";
 
 const dataDir = new URL("../app/products/data/", import.meta.url);
@@ -33,11 +34,7 @@ const mediaFile = new URL("catalog-media.json", dataDir);
 const publicDir = fileURLToPath(new URL("../public/", import.meta.url));
 
 const withReference = process.argv.includes("--with-reference");
-// `onlineSale` / `stock` come out of applySaleRestriction: products matched by
-// app/config/sale-restrictions.js carry onlineSale:false, stock:0 and a
-// `restriction` object so the cart, wishlist and the frozen checkout page
-// (which read this index) never treat them as purchasable.
-const FIELDS = ["sku", "name", "slug", "price", "image", "unit", "category", "stock", "brand", "onlineSale"];
+const FIELDS = ["sku", "name", "slug", "price", "image", "unit", "category", "stock", "brand"];
 const FORBIDDEN = [
   { label: "source-site string", test: (text) => /bighaat/i.test(text) },
   { label: "development reference-image path", test: (text) => text.includes("/dev-reference-image/") },
@@ -66,6 +63,9 @@ for (const p of products) {
   if (typeof p.image !== "string" || !p.image.startsWith("/assets/")) problems.push(`${p.sku}: image outside /assets (${p.image})`);
   for (const img of p.images ?? []) if (typeof img !== "string" || !img.startsWith("/assets/")) problems.push(`${p.sku}: images[] entry outside /assets (${img})`);
   if (p.sourceAttribution) problems.push(`${p.sku}: sourceAttribution present without licence flag`);
+  // Nothing the business does not sell may be in the catalogue.
+  const exclusion = exclusionFor(p);
+  if (exclusion) problems.push(`${p.sku}: excluded product in products.json (${exclusion.code}: ${p.name}) — re-run npm run import:catalog`);
   if (problems.length > 20) break;
 }
 if (problems.length) fail(problems);
@@ -87,15 +87,10 @@ if (withReference) {
 }
 
 let merged = 0;
-let restricted = 0;
 const index = products.map((entry) => {
-  const product = applySaleRestriction(withCatalogMedia(entry, media));
+  const product = withCatalogMedia(entry, media);
   const slim = {};
   for (const field of FIELDS) slim[field] = product[field];
-  if (product.restriction) {
-    slim.restriction = product.restriction;
-    restricted += 1;
-  }
   // productsForView("Featured") relies on this flag; only emitted when true.
   if (product.isFeatured) slim.isFeatured = true;
   const ref = reference?.(product.sku);
@@ -122,7 +117,7 @@ try {
 if (previous !== json) await writeFile(target, json);
 
 console.log(
-  `[product-index] ${index.length} products (${restricted} not for online sale) -> ${fileURLToPath(target)} (${(json.length / 1024).toFixed(0)} KB)${
+  `[product-index] ${index.length} products -> ${fileURLToPath(target)} (${(json.length / 1024).toFixed(0)} KB)${
     reference ? ` — LOCAL index with reference images for ${merged} products (git-ignored, never deploy)` : ""
   }`
 );

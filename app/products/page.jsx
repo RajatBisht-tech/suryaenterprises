@@ -2,14 +2,13 @@ import Image from "next/image";
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 import Breadcrumbs from "../components/shop/Breadcrumbs";
-import { StoreOnlyTag } from "../components/shop/CategoryMegaMenu";
 import ProductCard from "../components/shop/ProductCard";
 import { ICONS } from "../components/shop/icons";
 import { getCatalogStats, getNavCategories, getTopPicks } from "./data/catalog.server";
 
 export const metadata = {
   title: "All categories",
-  description: "Explore seeds, crop protection, crop nutrition, farm machinery and animal husbandry products from Surya Enterprises.",
+  description: "Explore seeds, traps & repellents and farm machinery from Surya Enterprises — genuine products from leading brands in every pack size.",
 };
 
 export default function ProductsPage() {
@@ -25,16 +24,14 @@ export default function ProductsPage() {
         <p className="eyebrow">Surya Enterprises</p>
         <h1 className="font-display text-2xl font-extrabold text-ink sm:text-[28px]">All categories</h1>
         <p className="mt-1 max-w-2xl text-[14px] text-ink-2">
-          Five categories, <span className="font-semibold text-ink tabular-nums">{fmt(stats.subcategories)}</span> subcategories and{" "}
+          Three categories, <span className="font-semibold text-ink tabular-nums">{fmt(stats.subcategories)}</span> subcategories and{" "}
           <span className="font-semibold text-ink tabular-nums">{fmt(stats.total)}</span> listings from{" "}
-          <span className="font-semibold text-ink tabular-nums">{fmt(stats.brands)}</span> brands — genuine products from leading brands and
-          Surya&apos;s own range. <span className="font-semibold text-ink tabular-nums">{fmt(stats.onlineTotal)}</span> listings can be bought online;
-          pesticides, urea, animal-husbandry products and other regulated goods are marked “Not for online sale” and are available at our Jaipur
-          store and by quotation.
+          <span className="font-semibold text-ink tabular-nums">{fmt(stats.brands)}</span> brands — genuine products from leading brands, every
+          pack size listed with its own price.
         </p>
       </header>
 
-      <ul className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+      <ul className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
         {categories.map((c) => {
           const Icon = ICONS[c.icon];
           return (
@@ -50,10 +47,9 @@ export default function ProductsPage() {
                     <span className="flex items-center gap-1.5">
                       {Icon && <Icon className="h-4 w-4 shrink-0 text-brand" strokeWidth={1.75} aria-hidden="true" />}
                       <span className="font-display text-lg font-extrabold leading-tight text-ink group-hover:text-brand">{c.name}</span>
-                      {c.storeOnly && <StoreOnlyTag />}
                     </span>
                     <span className="mt-0.5 block text-xs text-ink-2">
-                      {c.storeOnly ? "Store & quotation only" : `${fmt(c.onlineCount)} online`} · {fmt(c.count)} listings · {c.subcategoryCount} subcategories · {c.brandCount} brands
+                      {fmt(c.count)} listings · {c.subcategoryCount} subcategories · {c.brandCount} brands
                     </span>
                   </span>
                 </Link>
@@ -63,10 +59,7 @@ export default function ProductsPage() {
                     {c.subcategories.slice(0, 6).map((s) => (
                       <li key={s.slug}>
                         <Link href={`/c/${c.slug}/${s.slug}`} className="flex items-center justify-between gap-2 rounded px-1 py-0.5 text-ink hover:bg-brand-tint hover:text-brand">
-                          <span className="flex min-w-0 items-center gap-1.5">
-                            <span className="truncate">{s.name}</span>
-                            {s.storeOnly && !c.storeOnly && <StoreOnlyTag />}
-                          </span>
+                          <span className="min-w-0 truncate">{s.name}</span>
                           <span className="text-xs tabular-nums text-ink-3">{s.count}</span>
                         </Link>
                       </li>
@@ -86,9 +79,9 @@ export default function ProductsPage() {
       <section aria-labelledby="institutional-heading" className="rounded-lg border border-line bg-white px-4 py-3">
         <h2 id="institutional-heading" className="eyebrow">Buying in volume?</h2>
         <p className="mt-1 text-[13px] text-ink-2">
-          Technical grades, custom packaging and quotations for co-operatives, dealers and institutions.
+          Bulk seeds, sprayers, tarpaulins and equipment for co-operatives, dealers, universities and institutions — quotations on request.
           <Link href="/products/institutional" className="ml-1 font-semibold text-brand hover:underline">
-            Bulk &amp; institutional range
+            Bulk &amp; institutional orders
           </Link>
         </p>
       </section>

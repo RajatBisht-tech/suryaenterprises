@@ -46,8 +46,8 @@ const ManagementContent = () => {
                     I am delighted to welcome you to the digital home of SURYA ENTERPRISES, where we cultivate 
                     progress, nurture innovation, and empower a greener tomorrow. For over 12 years formerly known as 
                     &apos;Solar Crop Science&apos;, SURYA ENTERPRISES has stood as a beacon of agricultural excellence. Our journey,
-                    rooted in dedication and driven by science, has led us to develop AgroChemical solutions that not 
-                    only transform crops but also shape the landscape of modern farming.
+                    rooted in dedication and driven by science, has led us to bring farmers the seeds, crop-care tools and
+                    farm machinery that not only transform crops but also shape the landscape of modern farming.
                   </p>
                   <p>
                     I invite you to explore our website and discover a world of possibilities. From our meticulously 
@@ -126,8 +126,8 @@ const ManagementContent = () => {
                 
                 <div className="space-y-4 text-gray-600 leading-relaxed">
                   <p>
-                    As CEO and Director, I&apos;m honoured to lead a team dedicated to delivering innovative and sustainable
-                    Agro Chemical solutions. With a deep understanding of the needs of farmers, we strive to provide 
+                    As CEO and Director, I&apos;m honoured to lead a team dedicated to delivering genuine seeds, crop-care
+                    tools and farm machinery. With a deep understanding of the needs of farmers, we strive to provide
                     excellence, quality, and support in every product we offer.
                   </p>
                   <p>

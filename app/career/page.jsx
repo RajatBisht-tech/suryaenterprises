@@ -88,7 +88,7 @@ const CareerContent = () => {
       ],
       requirements: [
         'BSc Agriculture / MBA',
-        '2+ years in agrochemical sales',
+        '2+ years in agri-inputs or farm-equipment sales',
         'Strong communication skills',
         'Valid driving license'
       ]

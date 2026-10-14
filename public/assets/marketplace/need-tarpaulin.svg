@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 160" role="img" aria-hidden="true">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFF6D9"/><stop offset="1" stop-color="#F3DFBC"/></linearGradient>
+    <linearGradient id="tarp" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#4F8EDC"/><stop offset="1" stop-color="#1F5FB4"/></linearGradient>
+    <clipPath id="c"><circle cx="80" cy="80" r="80"/></clipPath>
+  </defs>
+  <g clip-path="url(#c)">
+    <rect width="160" height="160" fill="url(#bg)"/>
+    <circle cx="126" cy="34" r="32" fill="#FFC72C" opacity=".4"/>
+    <path d="M-10 130 Q80 116 170 130 V170 H-10Z" fill="#C8955E" opacity=".55"/>
+    <!-- grain heap under the sheet -->
+    <path d="M30 118 Q80 56 130 118Z" fill="#E0A800"/>
+    <!-- tarpaulin draped over the heap -->
+    <path d="M18 122 Q40 70 82 60 Q124 70 144 122 L132 128 Q118 96 82 82 Q46 96 30 128Z" fill="url(#tarp)"/>
+    <path d="M18 122 Q40 70 82 60 Q124 70 144 122" fill="none" stroke="#DCEBFF" stroke-width="2" stroke-linecap="round" opacity=".8"/>
+    <!-- folds -->
+    <g fill="none" stroke="#1A4F99" stroke-width="1.4" stroke-linecap="round" opacity=".7">
+      <path d="M52 92 Q58 108 54 124"/><path d="M82 84 Q82 104 82 124"/><path d="M110 92 Q104 108 108 124"/>
+    </g>
+    <!-- eyelets and ropes -->
+    <g fill="#F3DFBC" stroke="#6F7C75" stroke-width="1.4">
+      <circle cx="26" cy="120" r="3.2"/><circle cx="136" cy="120" r="3.2"/>
+    </g>
+    <path d="M26 123 L10 142" stroke="#7A4E2D" stroke-width="2.2" stroke-linecap="round"/>
+    <path d="M136 123 L152 142" stroke="#7A4E2D" stroke-width="2.2" stroke-linecap="round"/>
+    <!-- pegs -->
+    <rect x="6" y="138" width="8" height="10" rx="2" fill="#3B2614" transform="rotate(-20 10 143)"/>
+    <rect x="146" y="138" width="8" height="10" rx="2" fill="#3B2614" transform="rotate(20 150 143)"/>
+    <!-- grass -->
+    <g fill="#3FA75F"><path d="M44 134 C42 126 46 120 52 118 C52 126 48 132 44 134Z"/><path d="M114 136 C118 128 124 124 130 124 C128 130 122 134 114 136Z"/></g>
+  </g>
+</svg>

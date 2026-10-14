@@ -11,12 +11,12 @@ import { getCatalogStats } from "../products/data/catalog.server";
 export const metadata = {
   title: "About us",
   description:
-    "Surya Enterprises is India's agriculture marketplace — a licensed agri-inputs marketplace selling seeds, crop protection, crop nutrition, farm machinery and animal husbandry products from leading brands alongside Surya's own crop-protection range, built from inside the supply chain in 2023. Pesticides, urea and other regulated goods are sold at the Jaipur store and by quotation, not online.",
+    "Surya Enterprises is India's agriculture marketplace — a licensed agri-inputs marketplace selling seeds, traps & repellents and farm machinery from leading brands, built from inside the supply chain in 2023.",
 };
 
 const fmt = (n) => n.toLocaleString("en-IN");
 const searchHref = (name) => `/search?q=${encodeURIComponent(name)}`;
-// "insecticides" but "PGR & others" — keep acronyms as written.
+// "seeds" but "HDPE covers" — keep acronyms as written.
 const lineLabel = (name) => (/^[A-Z]{2,}/.test(name) ? name : name.toLowerCase());
 const certs = SITE.certifications.filter((c) => c.enabled);
 const officer = SITE.legal.grievanceOfficer;
@@ -78,11 +78,9 @@ function Chain({ steps, labels = [], dark = false, ariaLabel }) {
 }
 
 export default function AboutPage() {
-  const onlineLines = P.productLines.filter((l) => l.online);
-  const storeLines = P.productLines.filter((l) => !l.online);
   const [b2c, b2b] = P.segments;
   const store = SITE.offices[0];
-  // Online-sellable figures (same computation as the business-profile PDF).
+  // Live catalogue figures (the same numbers the business-profile PDF prints).
   const stats = getCatalogStats();
 
   return (
@@ -97,7 +95,7 @@ export default function AboutPage() {
         aside={<BrandLogo variant="wide" width={230} tile href={null} />}
       >
         <ul className="mt-4 flex flex-wrap gap-1.5" aria-label="At a glance">
-          {[...P.coverChips, `${fmt(stats.onlineProducts)} products online`].map((chip, i) => (
+          {[...P.coverChips, `${fmt(stats.products)} products online`].map((chip, i) => (
             <li
               key={chip}
               className="rise rounded-full border border-white/25 bg-white/10 px-3 py-1 text-[12px] font-semibold text-white"
@@ -233,12 +231,12 @@ export default function AboutPage() {
             <SectionTitle
               id="sell-heading"
               eyebrow="What we sell"
-              title="Seeds, traps & lures, crop nutrition and farm machinery online — pesticides, urea and animal husbandry at the store"
+              title="Seeds, traps & repellents and farm machinery — every pack size online and at our Jaipur store"
             />
             <dl className="grid shrink-0 grid-cols-3 divide-x divide-line rounded-lg border border-line bg-canvas">
               {[
-                { value: fmt(stats.onlineProducts), label: "products online" },
-                { value: fmt(stats.onlineBrands), label: "brands online" },
+                { value: fmt(stats.products), label: "products" },
+                { value: fmt(stats.brands), label: "brands" },
                 { value: priceRange("₹"), label: "per pack" },
               ].map((s) => (
                 <div key={s.label} className="px-3 py-2.5 sm:px-4">
@@ -250,7 +248,7 @@ export default function AboutPage() {
           </div>
 
           <ul className="mt-4 divide-y divide-line border-t border-line">
-            {onlineLines.map((line) => (
+            {P.productLines.map((line) => (
               <li key={line.name} className="grid gap-3 py-4 md:grid-cols-[15rem_1fr_auto] md:items-start md:gap-6">
                 <div className="flex items-center gap-3">
                   <Medallion icon={line.icon} />
@@ -282,60 +280,17 @@ export default function AboutPage() {
             ))}
           </ul>
 
-          <div className="mt-4 rounded-lg border border-notice-line bg-[linear-gradient(100deg,#FFF7E6_0%,#FFFFFF_60%)] p-4">
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <h3 className="font-display text-[15px] font-extrabold text-ink">Through our store and institutional desk only</h3>
-              <span className="inline-flex items-center rounded-full bg-notice-tint px-2.5 py-1 text-[11px] font-bold uppercase tracking-wider text-notice ring-1 ring-notice-line">
-                {P.availability.offline.badge}
-              </span>
-            </div>
-            <ul className="mt-3 divide-y divide-notice-line/60">
-              {storeLines.map((line) => (
-                <li key={line.name} className="grid gap-3 py-3 md:grid-cols-[15rem_1fr_auto] md:items-start md:gap-6">
-                  <div className="flex items-center gap-3">
-                    <Medallion icon={line.icon} />
-                    <div className="min-w-0">
-                      <h4 className="font-display text-[15px] font-extrabold leading-tight text-ink">{line.name}</h4>
-                      {line.detail && <p className="text-xs text-ink-2">{line.detail}</p>}
-                    </div>
-                  </div>
-                  <ul className="flex flex-wrap gap-1.5" aria-label={`Example ${line.name.toLowerCase()}`}>
-                    {line.examples.map((name) => (
-                      <li key={name}>
-                        <Link href={searchHref(name)} className="chip hover:border-brand hover:text-brand">
-                          {name}
-                        </Link>
-                      </li>
-                    ))}
-                  </ul>
-                  <div className="flex items-center gap-3 md:flex-col md:items-end md:gap-1.5">
-                    <span className="inline-flex items-center gap-1.5 rounded-full bg-notice-tint px-2.5 py-1 text-[11px] font-bold uppercase tracking-wider text-notice">
-                      <span className="h-1.5 w-1.5 rounded-full bg-notice" aria-hidden="true" />
-                      Not for online sale
-                    </span>
-                    <Link
-                      href={line.categorySlug ? `/c/${line.categorySlug}` : "/products/institutional"}
-                      className="inline-flex items-center gap-1 text-[13px] font-semibold text-brand hover:underline"
-                    >
-                      {line.categorySlug ? `Browse ${lineLabel(line.name)}` : "Ask the institutional desk"}
-                      <ArrowRight className="h-3.5 w-3.5" strokeWidth={1.75} aria-hidden="true" />
-                    </Link>
-                  </div>
-                </li>
-              ))}
-            </ul>
-            <p className="mt-3 text-[12.5px] text-ink-2">
-              {P.availability.offline.note}{" "}
-              <Link href="/products/institutional" className="font-semibold text-brand hover:underline">
-                Ask the institutional desk
-              </Link>{" "}
-              or{" "}
-              <Link href="/contact" className="font-semibold text-brand hover:underline">
-                visit the store
-              </Link>
-              .
-            </p>
-          </div>
+          <p className="mt-4 rounded-lg bg-canvas px-4 py-3 text-[12.5px] text-ink-2">
+            {P.availability.note}{" "}
+            <Link href="/products/institutional" className="font-semibold text-brand hover:underline">
+              Ask the institutional desk
+            </Link>{" "}
+            or{" "}
+            <Link href="/contact" className="font-semibold text-brand hover:underline">
+              visit the store
+            </Link>
+            .
+          </p>
         </section>
 
         {/* 6. How we sell */}

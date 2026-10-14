@@ -32,9 +32,9 @@ const sections = [
     content: (
       <p>
         Nothing on this website — including category descriptions, “shop by need” groupings, search results, FAQs or
-        helpline guidance — is a recommendation to use a particular product on a particular crop, field or pest. Use
-        only as directed on the CIB&amp;RC-approved label, and consult a qualified agronomist or your local Krishi
-        Vigyan Kendra for field-specific advice. See our <Link href="/product-safety-disclaimer">Product Safety Disclaimer</Link>.
+        helpline guidance — is a recommendation to sow a particular variety or use a particular trap or machine on a
+        particular crop, field or pest. Use only as directed on the packet, label or manual supplied by the
+        manufacturer, and consult a qualified agronomist or your local Krishi Vigyan Kendra for field-specific advice.
       </p>
     ),
   },
@@ -65,7 +65,7 @@ const sections = [
     content: (
       <p>
         We aim to keep the website available at all times but do not guarantee uninterrupted access. Maintenance,
-        upgrades or events outside our control may make the site temporarily unavailable.
+        maintenance or events outside our control may make the site temporarily unavailable.
       </p>
     ),
   },
@@ -101,7 +101,7 @@ export default function DisclaimerPage() {
       sections={sections}
       related={[
         { name: "Terms of use", href: "/terms" },
-        { name: "Product safety disclaimer", href: "/product-safety-disclaimer" },
+        { name: "Return & refund policy", href: "/return-refund-policy" },
         { name: "Privacy policy", href: "/privacy" },
         { name: "Intellectual property", href: "/intellectual-property" },
       ]}

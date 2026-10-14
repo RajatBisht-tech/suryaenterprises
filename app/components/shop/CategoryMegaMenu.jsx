@@ -5,7 +5,6 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { ChevronDown, ChevronRight } from "lucide-react";
-import { SALE_RESTRICTION_SHORT } from "../../config/sale-restrictions";
 import { ICONS } from "./icons";
 
 const listingHref = (slug, params) => {
@@ -13,15 +12,6 @@ const listingHref = (slug, params) => {
   const qs = sp.toString();
   return `/c/${slug}${qs ? `?${qs}` : ""}`;
 };
-
-// "Store only": every listing in the category / subcategory is not for online sale.
-export function StoreOnlyTag({ className = "" }) {
-  return (
-    <span className={`rounded-sm bg-notice-tint px-1 py-px text-[9.5px] font-bold uppercase tracking-wider text-notice ${className}`}>
-      {SALE_RESTRICTION_SHORT}
-    </span>
-  );
-}
 
 // Green category strip with hover/click mega menus (subcategories, brands,
 // pack sizes — all counted from the live catalogue).
@@ -80,10 +70,9 @@ export default function CategoryMegaMenu({ categories }) {
             <div key={c.slug} className="flex" onMouseEnter={() => hoverOpen(c.slug)}>
               <Link
                 href={`/c/${c.slug}`}
-                className={`flex items-center gap-1.5 pl-3 pr-1 hover:bg-brand-hover ${active || open === c.slug ? "bg-brand-hover" : ""}`}
+                className={`flex items-center pl-3 pr-1 hover:bg-brand-hover ${active || open === c.slug ? "bg-brand-hover" : ""}`}
               >
                 {c.name}
-                {c.storeOnly && <StoreOnlyTag />}
               </Link>
               <button
                 type="button"
@@ -132,10 +121,7 @@ export default function CategoryMegaMenu({ categories }) {
                       href={`/c/${current.slug}/${s.slug}`}
                       className="flex items-center justify-between gap-2 rounded px-2 py-1.5 text-[13px] hover:bg-brand-tint hover:text-brand"
                     >
-                      <span className="flex min-w-0 items-center gap-1.5">
-                        <span className="truncate">{s.name}</span>
-                        {s.storeOnly && <StoreOnlyTag />}
-                      </span>
+                      <span className="min-w-0 truncate">{s.name}</span>
                       <span className="text-xs tabular-nums text-ink-3">{s.count}</span>
                     </Link>
                   </li>
@@ -187,11 +173,7 @@ export default function CategoryMegaMenu({ categories }) {
                 })()}
                 {current.count.toLocaleString("en-IN")} products · {current.brandCount} brands
               </span>
-              <span className="mt-1 text-[12px] text-ink-2">
-                {current.storeOnly
-                  ? "Store & quotation only — not sold online"
-                  : `${current.onlineCount.toLocaleString("en-IN")} available online`}
-              </span>
+              <span className="mt-1 text-[12px] text-ink-2">{current.subcategoryCount} subcategories · every pack size</span>
               <ul className="mt-2 flex flex-wrap justify-center gap-1 text-[12px]">
                 <li>
                   <Link href={listingHref(current.slug, { sort: "popularity" })} className="rounded px-2 py-1 text-brand hover:underline">

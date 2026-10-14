@@ -20,12 +20,21 @@
 // which adds `images`, `description` and `sourceAttribution` from the source.
 // With the flag off the output is scanned and the script FAILS if any
 // source-site string or URL slipped through.
+//
+// CATALOGUE EXCLUSIONS (owner decision, 2026-10-14): the business sells seeds,
+// non-chemical crop care (traps, lures, sticky traps, animal repellents) and
+// farm machinery only. Every source product is checked against
+// app/config/catalog-exclusions.js BEFORE it is imported; matching products
+// (pesticides, fertilisers, animal-husbandry goods, knives …) are dropped and
+// counted in the report, and validation fails if an excluded record ever
+// reaches the output.
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
-import { CATEGORIES, categoryByData, slugify } from "../app/config/taxonomy.js";
+import { CATEGORIES, categoryBySlug, slugify } from "../app/config/taxonomy.js";
 import { PLACEHOLDER_FILES, PLACEHOLDER_DIR, placeholderFor } from "../app/config/placeholders.js";
 import { describeProduct } from "../app/products/data/describe.mjs";
+import { exclusionFor, isExcluded } from "../app/products/data/catalog-exclusions.mjs";
 
 // ---------------------------------------------------------------------------
 // Settings
@@ -38,6 +47,15 @@ const MAX_BYTES = 12 * 1024 * 1024;
 const IMPORT_DATE = process.env.IMPORT_DATE || "2026-10-07";
 const LICENSED_MEDIA = process.env.LICENSED_MEDIA === "true";
 const SOURCE_SITE = { label: "Product data courtesy BigHaat", host: "bighaat" };
+
+// The source master's level-1 labels -> our category slugs (app/config/taxonomy.js).
+// Source categories not listed here (crop nutrition, animal husbandry) are
+// excluded wholesale by app/config/catalog-exclusions.js.
+const SOURCE_CATEGORIES = { Seeds: "seeds", "Crop Protection": "traps-and-repellents", "Farm Machinery": "farm-machinery" };
+const categoryBySource = Object.fromEntries(Object.entries(SOURCE_CATEGORIES).map(([label, slug]) => [label, categoryBySlug[slug]]));
+// Source level-2 labels renamed on the site (the source's catch-all for the
+// traps category carries the old category name).
+const SUBCATEGORY_RENAMES = { "Other Crop Protection": "Other Traps & Repellents" };
 
 const ROOT = fileURLToPath(new URL("../", import.meta.url));
 export const SOURCE_DIR = process.env.BRAND_SOURCE_DIR || path.join(ROOT, "bighaat_products");
@@ -109,6 +127,9 @@ export function cleanName(raw) {
     if (tail.includes(",") || CLAIM_WORDS.test(tail)) n = n.slice(0, hyphen);
   }
   n = collapse(n).replace(/[\s\-–|,]+$/g, "");
+  // Some listings end with the source's level-1 label as a tag
+  // ("… Sticky Trap A4 Crop Protection"); it is a category, not a name.
+  n = n.replace(/\s+crop protection$/i, "");
   return n || collapse(raw);
 }
 
@@ -174,11 +195,14 @@ export function loadSource(dir = SOURCE_DIR) {
 
 /**
  * Derives catalogue records from the source rows.
- * @returns {{ records: object[], skipped: {reason: string, name: string}[], sources: Map<string, object>, products: object[] }}
- *   `sources` maps our sku -> the source row pair (for the dev-only reference overlay).
+ * @returns {{ records: object[], skipped: {reason: string, name: string}[], excluded: object[], sources: Map<string, object>, products: object[] }}
+ *   `sources` maps our sku -> the source row pair (for the dev-only reference overlay);
+ *   `excluded` lists every source product dropped by app/config/catalog-exclusions.js
+ *   ({ code, category, subcategory, name }).
  */
 export function buildCatalog({ products, variants }, { licensedMedia = LICENSED_MEDIA } = {}) {
   const skipped = [];
+  const excluded = [];
   const skip = (reason, row) => skipped.push({ reason, name: row.name || row.handle || row.product_id });
 
   // Canonical spelling for level-2 names ("Growth regulators" -> "Growth Regulators").
@@ -224,31 +248,6 @@ export function buildCatalog({ products, variants }, { licensedMedia = LICENSED_
       skip("no category", p);
       continue;
     }
-    const category = categoryByData[l1];
-    if (!category) {
-      skip(`unknown category "${l1}"`, p);
-      continue;
-    }
-    if (!p.handle) {
-      skip("no handle", p);
-      continue;
-    }
-    if (new RegExp(SOURCE_SITE.host, "i").test(`${p.brand} ${p.vendor}`)) {
-      skip("source-site own/test brand", p);
-      continue;
-    }
-    // Owner rule: products the source lists without any image are not imported
-    // (only the emptiness of the field is tested; nothing from it is used).
-    if (!collapse(p.image_files)) {
-      skip("no image in source", p);
-      continue;
-    }
-    // Our slugs derive from the handle; never carry the source site's name.
-    const handle = slugify(p.handle.replace(new RegExp(SOURCE_SITE.host, "gi"), " "));
-    if (!handle) {
-      skip("empty handle", p);
-      continue;
-    }
     const crop = overviewValue(p.product_overview, "Crop Name");
     const cropType = overviewValue(p.product_overview, "Crop Type");
     const overviewCategory = overviewValue(p.product_overview, "Category");
@@ -259,12 +258,56 @@ export function buildCatalog({ products, variants }, { licensedMedia = LICENSED_
       else if (l1 === "Seeds" && crop) subcategory = canonicalL2(crop);
       else subcategory = `Other ${l1}`;
     }
-    const productType = overviewCategory && overviewCategory !== l1 && overviewCategory !== subcategory ? overviewCategory : type || l1;
+    const baseName = cleanName(p.name);
+
+    // Catalogue exclusions (app/config/catalog-exclusions.js), checked on the
+    // source's own labels BEFORE the taxonomy lookup so whole source categories
+    // (crop nutrition, animal husbandry) are reported as exclusions, not as
+    // unknown categories. An excluded product in a LIVE category still flows
+    // through SKU assignment below (flagged `excluded`, never written) so that
+    // the SKUs of the products we keep do not shift when a hash collision
+    // partner disappears — SKUs are stable across exclusion changes.
+    const exclusion = exclusionFor({ name: baseName, category: l1, subcategory });
+    if (exclusion) excluded.push({ code: exclusion.code, category: l1, subcategory, name: baseName });
+    const category = categoryBySource[l1];
+    if (!category) {
+      if (!exclusion) skip(`unknown category "${l1}"`, p);
+      continue;
+    }
+    subcategory = SUBCATEGORY_RENAMES[subcategory] ?? subcategory;
+    // Excluded products are not reported under the ordinary skip reasons.
+    const drop = (reason) => {
+      if (!exclusion) skip(reason, p);
+    };
+    if (!p.handle) {
+      drop("no handle");
+      continue;
+    }
+    if (new RegExp(SOURCE_SITE.host, "i").test(`${p.brand} ${p.vendor}`)) {
+      drop("source-site own/test brand");
+      continue;
+    }
+    // Owner rule: products the source lists without any image are not imported
+    // (only the emptiness of the field is tested; nothing from it is used).
+    if (!collapse(p.image_files)) {
+      drop("no image in source");
+      continue;
+    }
+    // Our slugs derive from the handle; never carry the source site's name.
+    const handle = slugify(p.handle.replace(new RegExp(SOURCE_SITE.host, "gi"), " "));
+    if (!handle) {
+      drop("empty handle");
+      continue;
+    }
+    // Product type: the overview's own value when it adds information, else the
+    // source product type, else the site's category name (never the source label).
+    const productType =
+      overviewCategory && overviewCategory !== l1 && overviewCategory !== subcategory ? overviewCategory : type && type !== l1 ? type : category.dataCategory;
 
     byId.set(p.product_id, {
       row: p,
       handle,
-      baseName: cleanName(p.name),
+      baseName,
       brand: collapse(p.brand),
       vendor: collapse(p.vendor) || collapse(p.brand),
       category: category.dataCategory,
@@ -274,6 +317,7 @@ export function buildCatalog({ products, variants }, { licensedMedia = LICENSED_
       productType,
       crop: crop || null,
       cropType: cropType || null,
+      excluded: exclusion?.code ?? null,
       variants: [],
     });
   }
@@ -307,19 +351,22 @@ export function buildCatalog({ products, variants }, { licensedMedia = LICENSED_
   }
   if (orphan) skipped.push({ reason: "variant without product (or product skipped)", name: `${orphan} variants` });
 
+  // `productList` still carries the excluded products of live categories (for
+  // SKU reservation); `kept` is what actually goes into the catalogue.
   const productList = [...byId.values()].filter((p) => {
     if (p.variants.length) return true;
-    skip("no sellable variant", p.row);
+    if (!p.excluded) skip("no sellable variant", p.row);
     return false;
   });
   for (const p of productList) {
     p.variants.sort((a, b) => packSizeValue(a.unit) - packSizeValue(b.unit) || a.rawTitle.localeCompare(b.rawTitle));
   }
+  const kept = productList.filter((p) => !p.excluded);
 
   // ---- featured: ~60, one per brand, drawn from the most common subcategories
   const subCount = new Map();
   const brandCount = new Map();
-  for (const p of productList) {
+  for (const p of kept) {
     subCount.set(p.subcategory, (subCount.get(p.subcategory) ?? 0) + 1);
     brandCount.set(p.brand, (brandCount.get(p.brand) ?? 0) + 1);
   }
@@ -328,7 +375,7 @@ export function buildCatalog({ products, variants }, { licensedMedia = LICENSED_
     .slice(0, 30)
     .map(([name]) => name);
   const bySub = new Map(topSubs.map((s) => [s, []]));
-  for (const p of productList) if (bySub.has(p.subcategory)) bySub.get(p.subcategory).push(p);
+  for (const p of kept) if (bySub.has(p.subcategory)) bySub.get(p.subcategory).push(p);
   for (const list of bySub.values()) {
     list.sort((a, b) => brandCount.get(b.brand) - brandCount.get(a.brand) || a.baseName.localeCompare(b.baseName) || a.handle.localeCompare(b.handle));
   }
@@ -360,6 +407,8 @@ export function buildCatalog({ products, variants }, { licensedMedia = LICENSED_
       if (slugs.has(slug)) slug = `${p.handle}-${slugify(v.rawTitle)}`;
       if (slugs.has(slug)) throw new Error(`duplicate slug ${slug}`);
       slugs.add(slug);
+      // Excluded product: its SKU and slug are now reserved; write nothing.
+      if (p.excluded) return;
 
       const facts = {
         baseName: p.baseName,
@@ -420,7 +469,7 @@ export function buildCatalog({ products, variants }, { licensedMedia = LICENSED_
       sources.set(sku, { product: p.row, variant: v.row, handle: p.handle });
     });
   }
-  return { records, skipped, sources, products: productList };
+  return { records, skipped, excluded, sources, products: kept };
 }
 
 // ---------------------------------------------------------------------------
@@ -447,6 +496,8 @@ export function validateCatalog(records, { licensedMedia = LICENSED_MEDIA } = {}
     if (!licensedMedia && (r.images.length || r.sourceAttribution)) errors.push(`licensed media present on ${r.sku}`);
     if (r.rating != null || r.reviewsCount != null) errors.push(`rating present on ${r.sku}`);
     if (/<[a-z][^>]*>/i.test(r.description)) errors.push(`html in description on ${r.sku}`);
+    // Nothing on the exclusion list may reach the catalogue (app/config/catalog-exclusions.js).
+    if (isExcluded(r)) errors.push(`excluded product in output: ${r.sku} ${r.name}`);
   }
   if (!licensedMedia) {
     const text = JSON.stringify(records);
@@ -501,7 +552,7 @@ function countBy(list, key) {
 function main() {
   const t0 = Date.now();
   const source = loadSource();
-  const { records, skipped, products } = buildCatalog(source);
+  const { records, skipped, excluded, products } = buildCatalog(source);
   const errors = validateCatalog(records);
 
   const json = `[\n${records.map((r) => JSON.stringify(r)).join(",\n")}\n]\n`;
@@ -513,12 +564,18 @@ function main() {
   log(`[import] output: ${records.length} records from ${products.length} products, ${new Set(records.map((r) => r.brand)).size} brands, ${new Set(records.map((r) => r.subcategory)).size} subcategories`);
   log(`[import] licensed media: ${LICENSED_MEDIA ? "ON" : "off"} · import date ${IMPORT_DATE} · stock ${STOCK_DEFAULT} · featured ${records.filter((r) => r.isFeatured).length} · own brand ${records.filter((r) => r.isOwnBrand).length}`);
   log();
-  log("Per level-1 category (products / variants):");
+  log("Per level-1 category (products / listings), every subcategory:");
   for (const c of CATEGORIES) {
     const ps = products.filter((p) => p.category === c.dataCategory);
     const rs = records.filter((r) => r.category === c.dataCategory);
-    log(`  ${c.name.padEnd(18)} ${String(ps.length).padStart(5)} / ${String(rs.length).padStart(6)}`);
-    for (const [sub, n] of countBy(rs, (r) => r.subcategory).slice(0, 8)) log(`      ${sub.padEnd(32)} ${String(n).padStart(5)}`);
+    log(`  ${c.name.padEnd(20)} ${String(ps.length).padStart(5)} / ${String(rs.length).padStart(6)}`);
+    for (const [sub, n] of countBy(rs, (r) => r.subcategory)) log(`      ${sub.padEnd(36)} ${String(n).padStart(5)}`);
+  }
+  log();
+  log(`Excluded by app/config/catalog-exclusions.js: ${excluded.length} source products`);
+  for (const [code, n] of countBy(excluded, (e) => e.code)) {
+    log(`  ${String(n).padStart(5)}  ${code}`);
+    for (const [key, m] of countBy(excluded.filter((e) => e.code === code), (e) => `${e.category} > ${e.subcategory}`)) log(`           ${String(m).padStart(5)}  ${key}`);
   }
   log();
   log("Top brands (variants):");

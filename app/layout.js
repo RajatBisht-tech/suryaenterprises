@@ -18,7 +18,7 @@ export const metadata = {
     template: `%s | ${SITE.name}`,
   },
   description:
-    "Shop seeds, traps & lures, crop nutrition and farm machinery online from leading brands and Surya's own range; pesticides, urea and animal-husbandry products are available at our Jaipur store and institutional desk — Surya Enterprises, a licensed agro-inputs marketplace for farmers, agri-retailers and institutional buyers.",
+    "Shop seeds, traps & repellents and farm machinery online — genuine products from leading brands in every pack size. Surya Enterprises is a licensed agri-inputs marketplace for farmers, agri-retailers and institutional buyers.",
 };
 
 export const viewport = {

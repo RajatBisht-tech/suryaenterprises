@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 160" role="img" aria-hidden="true">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#E8F5EC"/><stop offset="1" stop-color="#BFE3CC"/></linearGradient>
+    <linearGradient id="tank" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FFD866"/><stop offset="1" stop-color="#E0A800"/></linearGradient>
+    <linearGradient id="steel" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#E4E9E6"/><stop offset="1" stop-color="#9AA6A0"/></linearGradient>
+    <clipPath id="c"><circle cx="80" cy="80" r="80"/></clipPath>
+  </defs>
+  <g clip-path="url(#c)">
+    <rect width="160" height="160" fill="url(#bg)"/>
+    <circle cx="34" cy="34" r="30" fill="#FFC72C" opacity=".3"/>
+    <path d="M-10 134 Q60 112 170 130 V170 H-10Z" fill="#3FA75F" opacity=".45"/>
+    <path d="M-10 142 Q80 126 170 142 V170 H-10Z" fill="#0F7A3D" opacity=".35"/>
+    <!-- knapsack tank -->
+    <g transform="translate(58 36)">
+      <rect x="0" y="10" width="44" height="76" rx="12" fill="url(#tank)" stroke="#B88400" stroke-width="1.5"/>
+      <rect x="14" y="0" width="16" height="14" rx="3" fill="#7A4E2D"/>
+      <rect x="6" y="26" width="32" height="22" rx="3" fill="#fff" opacity=".35"/>
+      <path d="M8 58 H36" stroke="#B88400" stroke-width="1.5" stroke-linecap="round"/>
+      <path d="M8 66 H36" stroke="#B88400" stroke-width="1.5" stroke-linecap="round"/>
+      <!-- straps -->
+      <path d="M4 20 C-10 40 -8 70 2 84" fill="none" stroke="#3B2614" stroke-width="4" stroke-linecap="round"/>
+    </g>
+    <!-- hose and lance -->
+    <path d="M100 100 C118 104 126 90 122 70 C120 58 128 46 142 44" fill="none" stroke="#3B2614" stroke-width="3" stroke-linecap="round"/>
+    <path d="M136 40 L150 36" stroke="url(#steel)" stroke-width="5" stroke-linecap="round"/>
+    <path d="M149 36 L156 34" stroke="#6F7C75" stroke-width="3" stroke-linecap="round"/>
+    <!-- mist -->
+    <g fill="#CFEBD7" opacity=".9">
+      <circle cx="162" cy="26" r="3"/><circle cx="166" cy="36" r="2.4"/><circle cx="160" cy="44" r="2"/>
+      <circle cx="168" cy="30" r="1.6"/><circle cx="156" cy="24" r="1.4"/>
+    </g>
+    <!-- lever -->
+    <path d="M58 70 L34 86" stroke="#6F7C75" stroke-width="4" stroke-linecap="round"/>
+    <rect x="26" y="82" width="12" height="7" rx="3" fill="#0F7A3D"/>
+    <!-- seedlings -->
+    <g fill="#3FA75F"><path d="M26 130 C24 120 28 112 36 108 C36 118 32 126 26 130Z"/><path d="M30 132 C34 124 40 120 48 120 C44 128 38 132 30 132Z"/></g>
+    <g fill="#0F7A3D"><path d="M118 136 C116 126 120 118 128 114 C128 124 124 132 118 136Z"/></g>
+  </g>
+</svg>

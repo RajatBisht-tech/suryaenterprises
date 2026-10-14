@@ -11,10 +11,7 @@ export async function generateMetadata({ params }) {
   const n = s.count.toLocaleString("en-IN");
   return {
     title: `${s.name} — ${c.name}`,
-    // Store-only subcategories (pesticides, PGRs…) are browsable, not purchasable online.
-    description: s.storeOnly
-      ? `Browse ${n} ${s.name.toLowerCase()} listings in ${c.name.toLowerCase()} from Surya Enterprises — not for online sale; available at our Jaipur store and by quotation.`
-      : `Shop ${n} ${s.name.toLowerCase()} listings in ${c.name.toLowerCase()} online from Surya Enterprises, by brand and pack size.`,
+    description: `Shop ${n} ${s.name.toLowerCase()} listings in ${c.name.toLowerCase()} online from Surya Enterprises, by brand and pack size.`,
     alternates: { canonical: `/c/${c.slug}/${s.slug}` },
   };
 }

@@ -20,6 +20,13 @@ export function recordRecent(card) {
   store.write(next);
 }
 
+// Drop snapshots that fail `keep` (e.g. SKUs no longer in the catalogue).
+export function pruneRecent(keep) {
+  const current = store.read();
+  const next = current.filter((c) => c?.sku && keep(c));
+  if (next.length !== current.length) store.write(next);
+}
+
 export function clearRecent() {
   store.write([]);
 }

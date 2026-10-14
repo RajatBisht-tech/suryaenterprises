@@ -8,7 +8,6 @@ export const POLICY_LINKS = [
   { name: "Cancellation policy", href: "/cancellation-policy" },
   { name: "Payment policy", href: "/payment-policy" },
   { name: "Grievance redressal", href: "/grievance-redressal" },
-  { name: "Product safety disclaimer", href: "/product-safety-disclaimer" },
   { name: "Cookie policy", href: "/cookie-policy" },
   { name: "Disclaimer", href: "/disclaimer" },
   { name: "Intellectual property", href: "/intellectual-property" },

@@ -21,10 +21,10 @@ const sections = [
     title: "Who can become a seller",
     content: (
       <ul>
-        <li>Manufacturers, formulators, importers and authorised distributors of agricultural inputs registered in India.</li>
-        <li>For pesticides: holders of a valid CIB&amp;RC registration certificate (or authorisation from the registrant) and a valid pesticide sale/stock licence issued by the State Agriculture Department.</li>
-        <li>For seeds (when the category opens): entities complying with the Seeds Act, 1966, the Seeds (Control) Order, 1983 and state seed-licensing rules.</li>
-        <li>For fertilisers (when the category opens): entities holding the registration/authorisation required under the Fertiliser (Control) Order, 1985.</li>
+        <li>Manufacturers, importers and authorised distributors of seeds, traps &amp; repellents and farm machinery registered in India.</li>
+        <li>For seeds: entities complying with the Seeds Act, 1966, the Seeds (Control) Order, 1983 and state seed-licensing rules, selling only varieties notified or truthfully labelled as the law requires.</li>
+        <li>For farm machinery and equipment: manufacturers or authorised distributors able to honour the manufacturer&apos;s warranty through a service network in India, with BIS certification where the product category requires it.</li>
+        <li>For traps, lures and repellents: entities able to document the composition and intended use of each product and to supply it in sealed, labelled packs.</li>
         <li>GST-registered businesses able to issue tax invoices in the buyer’s name.</li>
       </ul>
     ),
@@ -38,7 +38,7 @@ const sections = [
         <ul>
           <li>Certificate of incorporation or partnership/proprietorship proof, PAN and GSTIN;</li>
           <li>Regulatory licences and registrations relevant to each product category;</li>
-          <li>Product master data: name, brand, active ingredient and content, formulation, pack sizes, MRP, CIB&amp;RC registration number, label artwork and safety data sheet;</li>
+          <li>Product master data: name, brand, variety or model, pack sizes, MRP, label or packet artwork, and for machinery the warranty terms and user manual;</li>
           <li>Bank account details for settlements, and a signed seller agreement.</li>
         </ul>
         <p>We verify documents before any listing goes live and may re-verify periodically or on complaint.</p>
@@ -50,11 +50,11 @@ const sections = [
     title: "Listing standards",
     content: (
       <ul>
-        <li>Only products registered and permitted for sale in India may be listed; banned or restricted molecules may not be listed, and state-level restrictions must be respected.</li>
-        <li>Listings must match the approved label exactly — no claims of crops, pests, doses or benefits beyond the label.</li>
+        <li>Only seeds, traps &amp; repellents and farm machinery permitted for sale in India may be listed; state-level restrictions on seed varieties must be respected.</li>
+        <li>Listings must match the packet, label or manual exactly — no claims of yield, crops, catches or benefits beyond what the manufacturer states.</li>
         <li>Selling price must not exceed the printed MRP. Discounts, if any, must be genuine.</li>
         <li>Images must show the actual product and packaging; stock photos of crops or unrelated products are not allowed.</li>
-        <li>Expiry: only stock with adequate remaining shelf life may be dispatched; the batch number and expiry must be visible on the pack.</li>
+        <li>Expiry: only seed lots with adequate remaining validity may be dispatched; the lot number, germination and expiry details must be visible on the packet.</li>
       </ul>
     ),
   },
@@ -63,8 +63,8 @@ const sections = [
     title: "Fulfilment and service levels",
     content: (
       <ul>
-        <li>Sellers must dispatch within the dispatch window published in our <Link href="/shipping-policy">Shipping Policy</Link>, in compliant hazardous-goods packaging, and provide tracking details.</li>
-        <li>Sellers honour the <Link href="/return-refund-policy">Return &amp; Refund Policy</Link> and <Link href="/cancellation-policy">Cancellation Policy</Link> for their products, including replacement of damaged, wrong or expired items.</li>
+        <li>Sellers must dispatch within the dispatch window published in our <Link href="/shipping-policy">Shipping Policy</Link>, in the manufacturer&apos;s sealed packaging, and provide tracking details.</li>
+        <li>Sellers honour the <Link href="/return-refund-policy">Return &amp; Refund Policy</Link> and <Link href="/cancellation-policy">Cancellation Policy</Link> for their products, including replacement of damaged, wrong, defective or expired items.</li>
         <li>Customer complaints are routed through our <Link href="/grievance-redressal">Grievance Redressal</Link> process; sellers must respond to a referred complaint within 2 working days.</li>
       </ul>
     ),
@@ -87,8 +87,8 @@ const sections = [
       <>
         <p>We may suspend or delist a seller for:</p>
         <ul>
-          <li>selling counterfeit, adulterated, expired, banned or unregistered products;</li>
-          <li>label claims or pricing that breach the law or our standards;</li>
+          <li>selling counterfeit, adulterated, expired or unapproved products;</li>
+          <li>packet, label or pricing claims that breach the law or our standards;</li>
           <li>repeated late dispatch, poor packaging or unresolved complaints;</li>
           <li>contacting buyers to divert orders off the platform; or</li>
           <li>any breach of the seller agreement or applicable law.</li>
@@ -115,12 +115,12 @@ export default function SellerPolicyPage() {
     <PolicyLayout
       eyebrow="Partners"
       title="Seller Policy"
-      intro="Terms for suppliers and brand partners who wish to sell agricultural inputs through the Surya Enterprises marketplace in future."
+      intro="Terms for suppliers and brand partners who wish to sell seeds, traps & repellents or farm machinery through the Surya Enterprises marketplace in future."
       sections={sections}
       related={[
         { name: "Bulk order terms", href: "/bulk-order-terms" },
         { name: "Intellectual property", href: "/intellectual-property" },
-        { name: "Product safety disclaimer", href: "/product-safety-disclaimer" },
+        { name: "Disclaimer", href: "/disclaimer" },
         { name: "Terms of use", href: "/terms" },
       ]}
     />

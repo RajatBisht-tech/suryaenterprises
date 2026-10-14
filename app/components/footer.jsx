@@ -4,7 +4,6 @@ import {
 } from "lucide-react";
 import { COMPANY_PROFILE } from "../config/company-profile";
 import { POLICY_LINKS } from "../config/policy-links";
-import { SALE_RESTRICTION_SHORT } from "../config/sale-restrictions";
 import { SITE, mailHref, telHref, whatsappHref } from "../config/site";
 import { getNavCategories } from "../products/data/catalog.server";
 import BrandLogo from "./shop/BrandLogo";
@@ -12,10 +11,9 @@ import FooterPartnersStrip from "./shop/FooterPartnersStrip";
 import FooterColumn from "./shop/FooterColumn";
 import NewsletterForm from "./shop/NewsletterForm";
 
-// Categories whose every listing is "Not for online sale" (e.g. animal
-// husbandry) are tagged "Store only" — counted from the live catalogue.
+// The live categories (from the catalogue) plus the fixed shop entry points.
 const shopLinks = () => [
-  ...getNavCategories().map((c) => ({ name: c.name, href: `/c/${c.slug}`, tag: c.storeOnly ? SALE_RESTRICTION_SHORT : null })),
+  ...getNavCategories().map((c) => ({ name: c.name, href: `/c/${c.slug}` })),
   { name: "All categories", href: "/products" },
   { name: "Bulk & institutional", href: "/products/institutional" },
   { name: "Under ₹500", href: "/search?max=500&sort=popularity" },

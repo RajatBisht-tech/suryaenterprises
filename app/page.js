@@ -15,6 +15,7 @@ import {
   getCatalogStats,
   getHomeRails,
   getNavCategories,
+  getShopByNeed,
   getTopBrands,
 } from "./products/data/catalog.server";
 
@@ -35,13 +36,12 @@ function Rail({ id, title, eyebrow, href, items }) {
 
 export default function HomePage() {
   const categories = getNavCategories();
+  const needs = getShopByNeed();
   const stats = getCatalogStats();
   const rails = getHomeRails();
   const brands = getTopBrands(14);
   const fmt = (n) => n.toLocaleString("en-IN");
-  // Online-sellable listings only (pesticides, urea, animal-husbandry goods
-  // etc. are store-and-quotation items — see app/config/sale-restrictions.js).
-  const count = (slug) => categories.find((c) => c.slug === slug)?.onlineCount ?? 0;
+  const count = (slug) => categories.find((c) => c.slug === slug)?.count ?? 0;
 
   // Hero scenes are hand-made flat illustrations (public/assets/marketplace).
   const slides = [
@@ -50,9 +50,9 @@ export default function HomePage() {
       image: "/assets/marketplace/hero-paddy-sunrise.svg",
       eyebrow: SITE.tagline,
       eyebrowShort: "Agri marketplace",
-      title: "Every farm input, one marketplace",
-      text: `${fmt(stats.onlineTotal)} listings to buy online from ${fmt(stats.onlineBrands)} brands — seeds, traps & lures, crop nutrition and farm machinery in every pack size, one checkout. Pesticides, urea and animal-husbandry products: at our Jaipur store and by quotation.`,
-      textShort: `${fmt(stats.onlineTotal)} listings online · ${fmt(stats.onlineBrands)} brands`,
+      title: "Seeds, traps and farm machinery, one marketplace",
+      text: `${fmt(stats.total)} listings from ${fmt(stats.brands)} brands — seeds by crop, traps & repellents by pest, sprayers, tarpaulins and tools by type, every pack size, one checkout.`,
+      textShort: `${fmt(stats.total)} listings · ${fmt(stats.brands)} brands`,
       cta: "Shop all categories",
       href: "/products",
       secondary: { label: "Seeds", href: "/c/seeds" },
@@ -60,14 +60,14 @@ export default function HomePage() {
     {
       id: "protect",
       image: "/assets/marketplace/hero-cotton-sprayer.svg",
-      eyebrow: `${fmt(count("crop-protection"))} crop protection · ${fmt(count("crop-nutrition"))} crop nutrition online`,
-      eyebrowShort: "Protect & nourish",
-      title: "Protect the crop, feed the soil",
-      text: "Traps & lures, animal repellents, bio-fertilisers, biostimulants and fertilisers online — filter by brand, crop and pack size. Pesticides and growth regulators are sold at our Jaipur store and through the institutional desk.",
-      textShort: "Traps, lures, repellents and crop nutrition online.",
-      cta: "Shop crop protection",
-      href: "/c/crop-protection",
-      secondary: { label: "Crop nutrition", href: "/c/crop-nutrition" },
+      eyebrow: `${fmt(count("traps-and-repellents"))} traps & repellents · ${fmt(count("farm-machinery"))} machinery listings`,
+      eyebrowShort: "Protect & equip",
+      title: "Protect the crop, equip the farm",
+      text: "Pheromone traps, lures, sticky traps and animal repellents, plus knapsack and battery sprayers, tarpaulins, mulches and hand tools — filter by brand, crop and pack size.",
+      textShort: "Traps, lures, repellents, sprayers and tools.",
+      cta: "Shop traps & repellents",
+      href: "/c/traps-and-repellents",
+      secondary: { label: "Sprayers", href: "/c/farm-machinery/sprayers" },
     },
     {
       id: "bulk",
@@ -75,7 +75,7 @@ export default function HomePage() {
       eyebrow: "For agri-retailers & institutions",
       eyebrowShort: "Retailers & institutions",
       title: "Bulk & institutional buying",
-      text: "Volume supply and technical grades for institutional partners, with quotations on request.",
+      text: "Bulk seeds, sprayers, tarpaulins and equipment for institutions, universities and dealers — quotations on request.",
       textShort: "Volume supply, quotes on request.",
       cta: "Explore institutional",
       href: "/products/institutional",
@@ -94,7 +94,7 @@ export default function HomePage() {
           {SITE.name} — {SITE.tagline}
         </h1>
         <HeroCarousel slides={slides} />
-        <ShopByNeed categories={categories} />
+        <ShopByNeed needs={needs} />
         {promotions.length > 0 && <PromoCarousel slides={promotions} />}
         <TrustBar />
 
@@ -138,13 +138,13 @@ export default function HomePage() {
               Buying for a co-operative, dealer network or institution?
             </h2>
             <p className="mt-2 max-w-lg text-[14px] text-white/85">
-              Browse our institutional range of technical-grade actives with listed purity, and request a quote for volume
-              supply and custom packaging.
+              Bulk seeds, sprayers, tarpaulins and farm equipment for institutions, universities and dealers — request a quote
+              for volume supply.
             </p>
             <div className="mt-4 flex flex-wrap gap-2">
               <Link href="/products/institutional" className="btn btn-cart">
                 <Building2 className="h-4 w-4" strokeWidth={1.75} aria-hidden="true" />
-                View institutional range
+                Bulk &amp; institutional orders
               </Link>
               <a href={telHref} className="btn border border-white/40 text-white hover:bg-white/10">
                 <Phone className="h-4 w-4" strokeWidth={1.75} aria-hidden="true" />
@@ -173,7 +173,7 @@ export default function HomePage() {
             <div>
               <p className="eyebrow">Why buy from Surya</p>
               <h2 id="why-heading" className="font-display text-lg font-extrabold text-ink sm:text-xl">
-                A licensed marketplace for every farm input
+                A licensed marketplace for seeds, traps and farm machinery
               </h2>
             </div>
             <Link href="/aboutUs" className="hidden shrink-0 items-center gap-1 text-[13px] font-semibold text-brand hover:underline sm:inline-flex">
@@ -182,12 +182,12 @@ export default function HomePage() {
           </div>
           <ul className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
             {[
-              { icon: "shield", title: "Genuine products", text: "Genuine products from leading brands and Surya's own range — every listing names the brand, pack size and SKU, so you know exactly what you are buying." },
-              { icon: "label", title: "Licensed agro-inputs marketplace", text: "Surya Enterprises is licensed to sell agro-inputs. Pesticides, urea and animal-husbandry products are sold only at our Jaipur store and through the institutional desk — never online; everything we ship comes in sealed manufacturer packs." },
-              { icon: "factory", title: "Surya's own range", text: "Products made by Surya Enterprises are marked “Manufacturer direct” on their page; everything else is a genuine branded pack sold by Surya." },
+              { icon: "shield", title: "Genuine products", text: "Genuine products from leading brands — every listing names the brand, pack size and SKU, so you know exactly what you are buying." },
+              { icon: "label", title: "Licensed agri-inputs marketplace", text: "Surya Enterprises is licensed to trade in agri-inputs. Everything we ship comes in sealed manufacturer packs." },
+              { icon: "wheat", title: "Every pack size, its own listing", text: "Seeds by crop and variety, traps & repellents by pest, sprayers, tarpaulins and tools by type — each pack size has its own price." },
               { icon: "truck", title: "Pan-India dispatch", text: SITE.delivery.dispatchClaim },
               { icon: "upi", title: "Secure UPI payments", text: "Pay with any UPI app through PayU. Your UPI PIN is never entered on this site and no card details are stored." },
-              { icon: "building", title: "Bulk & institutional support", text: "Technical-grade products with listed purity for co-operatives, dealers and institutions — quotations on request." },
+              { icon: "building", title: "Bulk & institutional support", text: "Bulk seeds, sprayers, tarpaulins and equipment for co-operatives, dealers and institutions — quotations on request." },
             ].map((w) => (
               <li key={w.title} className="flex gap-3 rounded-md bg-white/85 p-3.5 ring-1 ring-line">
                 <Medallion icon={w.icon} />

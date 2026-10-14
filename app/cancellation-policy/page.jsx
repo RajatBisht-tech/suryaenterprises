@@ -87,8 +87,8 @@ const sections = [
     content: (
       <p>
         Cancellation of quotation-based institutional orders is governed by the quotation and our{" "}
-        <Link href="/bulk-order-terms">Bulk Order Terms</Link>, since custom packaging and technical-grade material may be
-        produced to order.
+        <Link href="/bulk-order-terms">Bulk Order Terms</Link>, since custom packaging and made-to-order quantities may be
+        prepared specifically for the order.
       </p>
     ),
   },

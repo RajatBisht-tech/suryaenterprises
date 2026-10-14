@@ -13,9 +13,11 @@ const INTERVAL = 5000;
 
 const ART = {
   pest: "/assets/marketplace/need-pest.svg",
-  weed: "/assets/marketplace/need-weed.svg",
-  disease: "/assets/marketplace/need-disease.svg",
   growth: "/assets/marketplace/need-growth.svg",
+  seeds: "/assets/marketplace/soon-seeds.svg",
+  sprayer: "/assets/marketplace/need-sprayer.svg",
+  tarpaulin: "/assets/marketplace/need-tarpaulin.svg",
+  tools: "/assets/marketplace/soon-tools.svg",
   warehouse: "/assets/marketplace/hero-agri-warehouse.svg",
 };
 

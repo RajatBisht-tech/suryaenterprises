@@ -127,37 +127,12 @@ const GLYPHS = {
   ),
 
   // ---- About page: what we sell ----
-  // insect (insecticides)
+  // insect (traps, lures & repellents)
   bug: (
     <>
       <ellipse cx="12" cy="14" rx="5" ry="6" />
       <path d="M12 8v12M7 14H4M20 14h-3M8 10.5l-3-2M16 10.5l3-2M8 17.5l-3 2M16 17.5l3 2" />
       <path d="M9 8a3 3 0 0 1 6 0" />
-    </>
-  ),
-  // grass blades (herbicides)
-  weed: (
-    <>
-      <path d="M12 21c0-6-3-10-7-12 2 5 3 8 7 12z" fill="#0F7A3D" fillOpacity="0.18" />
-      <path d="M12 21c0-6 3-10 7-12-2 5-3 8-7 12z" />
-      <path d="M12 21V7" />
-      <path d="M5 21h14" />
-    </>
-  ),
-  // leaf with a disease spot (fungicides)
-  leaf: (
-    <>
-      <path d="M5 19c0-8 5-13 14-13 0 9-5 14-13 14" />
-      <path d="M5 19c3-5 6-8 10-10" />
-      <circle cx="14.5" cy="9.5" r="1.3" fill="#0F7A3D" />
-    </>
-  ),
-  // rising line (plant growth regulators)
-  growth: (
-    <>
-      <path d="M4 20V6M4 20h16" />
-      <path d="M7 16l4-5 3 3 5-7" />
-      <path d="M16 7h3v3" />
     </>
   ),
   // wheat ear (seeds)
@@ -188,25 +163,6 @@ const GLYPHS = {
       <circle cx="13.5" cy="10.5" r="0.9" fill="#0F7A3D" />
       <circle cx="6.5" cy="15.5" r="0.9" fill="#0F7A3D" />
       <circle cx="13.5" cy="15.5" r="0.9" fill="#0F7A3D" />
-    </>
-  ),
-  // cow head (animal husbandry)
-  cattle: (
-    <>
-      <path d="M8 8.5a4 4 0 0 1 8 0v4.5a4 4 0 0 1-8 0z" fill="#FFC72C" fillOpacity="0.4" />
-      <path d="M8.5 8C6.5 7.5 5 6 5 4c2.2 0 3.6 1.2 4.2 3M15.5 8c2-.5 3.5-2 3.5-4-2.2 0-3.6 1.2-4.2 3" />
-      <path d="M4.5 11.5l3-1M19.5 11.5l-3-1" />
-      <path d="M9 16.5h6a2.5 2.5 0 0 1 2.5 2.5v1.5h-11V19A2.5 2.5 0 0 1 9 16.5z" />
-      <circle cx="10.2" cy="10.5" r=".7" fill="#0F7A3D" />
-      <circle cx="13.8" cy="10.5" r=".7" fill="#0F7A3D" />
-    </>
-  ),
-  // tied sack (crop nutrients / inputs)
-  sack: (
-    <>
-      <path d="M9 4h6l1 3H8z" fill="#FFC72C" fillOpacity="0.45" />
-      <path d="M8 7c-3 3-4 6-4 9a4 4 0 0 0 4 4h8a4 4 0 0 0 4-4c0-3-1-6-4-9" />
-      <path d="M10 14h4" />
     </>
   ),
 };

@@ -1,10 +1,8 @@
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
-import { SALE_RESTRICTION_SHORT } from "../../config/sale-restrictions";
 
 // Chip row of a category's subcategories (with counts) shown under the
-// listing title on /c/[category]. Subcategories whose every listing is
-// "Not for online sale" carry a small "Store only" tag.
+// listing title on /c/[category].
 export default function SubcategoryStrip({ categorySlug, subcategories, total, current = null }) {
   if (!subcategories?.length) return null;
   return (
@@ -21,9 +19,6 @@ export default function SubcategoryStrip({ categorySlug, subcategories, total, c
               >
                 {s.name}
                 <span className="text-ink-3">{s.count.toLocaleString("en-IN")}</span>
-                {s.storeOnly && (
-                  <span className="rounded-sm bg-notice-tint px-1 text-[9.5px] font-bold uppercase tracking-wider text-notice">{SALE_RESTRICTION_SHORT}</span>
-                )}
               </Link>
             </li>
           );

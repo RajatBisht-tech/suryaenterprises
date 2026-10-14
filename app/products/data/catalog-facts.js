@@ -2,11 +2,11 @@
 // Read by app/config/company-profile.js (About page + business-profile PDF).
 export const CATALOG_FACTS = {
   "importDate": "2026-10-07",
-  "products": 7074,
-  "skus": 12362,
-  "brands": 340,
-  "subcategories": 219,
-  "priceMin": 12,
+  "products": 3917,
+  "skus": 5556,
+  "brands": 181,
+  "subcategories": 182,
+  "priceMin": 13.95,
   "priceMax": 670000,
   "categories": [
     {
@@ -17,42 +17,24 @@ export const CATALOG_FACTS = {
       "brands": 91
     },
     {
-      "slug": "crop-protection",
-      "name": "Crop Protection",
-      "products": 1979,
-      "skus": 4326,
-      "brands": 139
-    },
-    {
-      "slug": "crop-nutrition",
-      "name": "Crop Nutrition",
-      "products": 1294,
-      "skus": 2653,
-      "brands": 139
+      "slug": "traps-and-repellents",
+      "name": "Traps & Repellents",
+      "products": 293,
+      "skus": 398,
+      "brands": 18
     },
     {
       "slug": "farm-machinery",
       "name": "Farm Machinery",
-      "products": 1140,
-      "skus": 1697,
+      "products": 1131,
+      "skus": 1687,
       "brands": 81
-    },
-    {
-      "slug": "animal-husbandry",
-      "name": "Animal Husbandry",
-      "products": 168,
-      "skus": 215,
-      "brands": 16
     }
   ],
   "topBrands": [
     {
       "name": "RS ENTERPRISES",
-      "products": 288
-    },
-    {
-      "name": "KATYAYANI KRISHI SEVA KENDRA PRIVATE LIMITED",
-      "products": 244
+      "products": 264
     },
     {
       "name": "Ashoka",
@@ -60,19 +42,11 @@ export const CATALOG_FACTS = {
     },
     {
       "name": "Modish Tractoraurkisan Pvt Ltd",
-      "products": 173
+      "products": 169
     },
     {
       "name": "Indo American Hybrid Seeds (India) Pvt. Ltd",
       "products": 161
-    },
-    {
-      "name": "RK Chemicals",
-      "products": 138
-    },
-    {
-      "name": "Syngenta",
-      "products": 129
     },
     {
       "name": "Namdhari Seeds",
@@ -91,8 +65,20 @@ export const CATALOG_FACTS = {
       "products": 106
     },
     {
-      "name": "Anand Agro Care",
-      "products": 101
+      "name": "SAGAR BIO TECH PRIVATE LIMITED",
+      "products": 99
+    },
+    {
+      "name": "URJA Seeds",
+      "products": 94
+    },
+    {
+      "name": "Sarpan Hybrid Seeds Co",
+      "products": 93
+    },
+    {
+      "name": "Rise Agro",
+      "products": 92
     }
   ]
 };

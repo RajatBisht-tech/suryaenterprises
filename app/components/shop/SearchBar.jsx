@@ -3,7 +3,6 @@
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useId, useRef, useState } from "react";
 import { ChevronDown, Search, X } from "lucide-react";
-import { SALE_RESTRICTION_SHORT } from "../../config/sale-restrictions";
 import { formatPrice } from "../../lib-shop/format";
 import ProductImage from "./ProductImage";
 
@@ -175,7 +174,7 @@ function SearchBarInner({ categories, initialQuery = "", initialScope = "", vari
           }}
           onFocus={() => query.trim().length >= 2 && setOpen(true)}
           onKeyDown={onKeyDown}
-          placeholder={mobile ? "Search seeds, sprays, fertilisers, tools…" : "Search by product, brand, crop or pack size"}
+          placeholder={mobile ? "Search seeds, traps, sprayers, tools…" : "Search by product, brand, crop or pack size"}
           aria-label="Search products"
           role="combobox"
           aria-expanded={showList}
@@ -234,14 +233,7 @@ function SearchBarInner({ categories, initialQuery = "", initialScope = "", vari
               </span>
               <span className="min-w-0 flex-1">
                 <span className="block truncate text-[14px] text-ink">{item.name}</span>
-                <span className="flex items-center gap-1.5 text-xs text-ink-2">
-                  in {item.category}
-                  {item.storeOnly && (
-                    <span className="rounded-sm bg-notice-tint px-1 py-px text-[9.5px] font-bold uppercase tracking-wider text-notice">
-                      {SALE_RESTRICTION_SHORT}
-                    </span>
-                  )}
-                </span>
+                <span className="block text-xs text-ink-2">in {item.category}</span>
               </span>
               <span className="shrink-0 text-[13px] font-semibold tabular-nums text-ink">{formatPrice(item.price)}</span>
             </li>

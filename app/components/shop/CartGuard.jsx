@@ -6,12 +6,13 @@ import { toast } from "../../lib-shop/toast";
 
 // Mounted once in app/layout.js so it runs on every page, including the
 // frozen /checkout page: on mount and after every "surya-cart-updated" event
-// it drops SKUs whose index entry says onlineSale:false (pesticides, urea,
-// animal-husbandry goods… see app/config/sale-restrictions.js), writes the
-// cart back (which re-dispatches the event) and toasts the removal.
+// it drops SKUs that no longer exist in the product index (products removed
+// from the catalogue — see app/config/catalog-exclusions.js — leave stale
+// entries in shoppers' saved carts), writes the cart back (which re-dispatches
+// the event) and toasts each removal with its SKU.
 //
-// The 3 MB client index is imported lazily and only when the cart has items,
-// so visitors with an empty cart never download it on listing pages.
+// The client index is imported lazily and only when the cart has items, so
+// visitors with an empty cart never download it on listing pages.
 export default function CartGuard() {
   useEffect(() => {
     let cancelled = false;
@@ -30,15 +31,14 @@ export default function CartGuard() {
       const current = { ...readCart() };
       const removed = [];
       for (const sku of Object.keys(current)) {
-        const product = getProduct(sku);
-        if (product && product.onlineSale === false) {
+        if (!getProduct(sku)) {
           delete current[sku];
-          removed.push(product.name);
+          removed.push(sku);
         }
       }
       if (!removed.length) return;
       writeCart(current);
-      for (const name of removed) toast(`Removed ${name}: not for online sale`);
+      for (const sku of removed) toast(`Removed ${sku}: no longer available`);
       // The frozen /checkout page reads the cart once on mount, before this
       // guard has run, so make it re-read the cleaned cart.
       if (window.location.pathname.startsWith("/checkout")) {

@@ -17,22 +17,9 @@ export function writeCart(cart) {
   window.dispatchEvent(new Event(CART_EVENT));
 }
 
-// SKUs that are "Not for online sale" (app/config/sale-restrictions.js). The
-// client index (products/data/products.js) registers them when it loads —
-// on the cart, wishlist and checkout pages, and lazily through <CartGuard />
-// as soon as a cart has items — so this module stays free of the 3 MB index
-// and the header bundle stays small. setQty / addToCart refuse these SKUs.
-const restrictedSkus = new Set();
-
-export function registerRestrictedSkus(skus) {
-  for (const sku of skus) restrictedSkus.add(sku);
-}
-
-export const isRestrictedSku = (sku) => restrictedSkus.has(sku);
-
 export function setQty(sku, quantity, max) {
   const cart = { ...readCart() };
-  const capped = isRestrictedSku(sku) ? 0 : Math.floor(Math.min(quantity, max ?? Number.POSITIVE_INFINITY));
+  const capped = Math.floor(Math.min(quantity, max ?? Number.POSITIVE_INFINITY));
   if (capped > 0) cart[sku] = capped;
   else delete cart[sku];
   writeCart(cart);

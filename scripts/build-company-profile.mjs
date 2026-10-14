@@ -22,7 +22,6 @@ import { mkdir, readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import { COMPANY_PROFILE as P, formatProfileDate, priceRange, socialStatement } from "../app/config/company-profile.js";
 import { SITE } from "../app/config/site.js";
-import { saleFacts } from "../app/products/data/sale-restrictions.mjs";
 
 const root = new URL("../", import.meta.url);
 const LOGO = fileURLToPath(new URL("public/assets/brand/surya-logo-wide.png", root));
@@ -89,17 +88,15 @@ const drift = Object.keys(live).filter((key) => live[key] !== P.catalogue[key]);
 for (const key of drift) {
   console.warn(`[company-profile] WARNING: catalogue.${key} is ${P.catalogue[key]} in catalog-facts.js but ${live[key]} in products.json — re-run scripts/import-brand-catalog.mjs`);
 }
-// Online-sellable figures: the same computation the storefront uses
-// (getCatalogStats / saleFacts), so the hero, About page and PDF agree.
-const facts = saleFacts(products);
+// Catalogue figures come straight from products.json (the same numbers the
+// storefront's getCatalogStats shows), so the hero, About page and PDF agree.
 const fmtN = (n) => n.toLocaleString("en-IN");
 const fill = (str) =>
   str
     .replace("{priceRange}", priceRange(CURRENCY))
-    .replace("{onlineProducts}", fmtN(facts.online.products))
-    .replace("{onlineSkus}", fmtN(facts.online.skus))
-    .replace("{onlineBrands}", fmtN(facts.online.brands))
-    .replace("{restrictedProducts}", fmtN(facts.restricted.products));
+    .replace("{products}", fmtN(live.products))
+    .replace("{skus}", fmtN(live.skus))
+    .replace("{brands}", fmtN(live.brands));
 // Example product names: a record's name is "<product> - <pack size>".
 const prefixes = new Set(products.map((p) => p.name.slice(0, p.name.length - p.unit.length - 3).trim().toLowerCase()));
 const missingExamples = P.productLines.flatMap((line) => line.examples.filter((e) => !prefixes.has(e.toLowerCase())).map((e) => `${e} (${line.name})`));
@@ -126,7 +123,7 @@ const doc = new PDFDocument({
     Title: `${P.displayName} — ${P.pdf.title}`,
     Author: P.legalName,
     Subject: `${P.pdf.subtitle}: ${P.natureOfBusiness}`,
-    Keywords: "Surya Enterprises, business profile, nature of business, agro-inputs, crop protection, marketplace",
+    Keywords: "Surya Enterprises, business profile, nature of business, agri-inputs, seeds, farm machinery, marketplace",
     Creator: "scripts/build-company-profile.mjs (pdfkit)",
     CreationDate: generatedAt,
   },
@@ -380,15 +377,11 @@ y = table({
     { label: "Example products", width: 205 },
     { label: "Availability", width: W - 128 - 205 },
   ],
-  rows: P.productLines.map((l) => [
-    l.name,
-    l.examples.length ? l.examples.slice(0, 3).join(" · ") : "Range available in-store and by quotation; coming online in phases.",
-    // Online lines get the green chip; store-only lines spell out the channel.
-    l.online ? { chip: P.availability.online.channels, tone: "green" } : l.availability ?? P.availability.offline.channels,
-  ]),
+  rows: P.productLines.map((l) => [l.name, l.examples.slice(0, 3).join(" · "), { chip: P.availability.online.channels, tone: "green" }]),
   fontSize: 9,
   pad: 6,
 });
+y = text(P.availability.note, PAGE.mx, y + 8, W, { size: 9.5, color: C.ink2, ratio: 1.4 });
 mark("page 2 products");
 
 y = h2("3. Sales channels", y + GAP);

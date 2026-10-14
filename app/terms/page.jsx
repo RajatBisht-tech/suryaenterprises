@@ -26,23 +26,21 @@ const sections = [
   },
   {
     id: "eligibility",
-    title: "Eligibility and lawful purchase of agro-inputs",
+    title: "Eligibility and lawful purchase of agri-inputs",
     content: (
       <>
         <ul>
           <li>You must be at least 18 years old and competent to contract under the Indian Contract Act, 1872.</li>
           <li>
-            Pesticides, plant growth regulators and other crop-protection chemicals are regulated under the Insecticides
-            Act, 1968 and the Insecticides Rules, 1971. They are listed on the Marketplace as “Not for online sale” and
-            are supplied only at our Jaipur store and through the institutional desk. By buying any agro-input from us,
-            you confirm that you are buying for bona fide agricultural use, or that you hold any licence required for
-            resale or commercial stocking in your state.
+            The Marketplace sells seeds, traps &amp; repellents and farm machinery. Seeds are regulated under the Seeds
+            Act, 1966 and the Seeds (Control) Order, 1983. By buying from us you confirm that you are buying for bona fide
+            agricultural use, or that you hold any licence required for resale or commercial stocking in your state.
           </li>
           <li>
-            Products must be used only on the crops, at the doses and in the manner stated on the CIB&amp;RC-approved
-            label. See our <Link href="/product-safety-disclaimer">Product Safety Disclaimer</Link>.
+            Products must be used only as directed on the packet, label or manual supplied by the manufacturer. See our{" "}
+            <Link href="/disclaimer">Disclaimer</Link>.
           </li>
-          <li>You are responsible for ensuring that the product you order is legal to possess and use in your state or district.</li>
+          <li>You are responsible for ensuring that the product you order is legal to possess and use in your state or district (some seed varieties are not notified for sale in every state).</li>
         </ul>
       </>
     ),
@@ -66,7 +64,7 @@ const sections = [
             the delivery area, suspected fraud or misuse, or an inability to verify your details. Any amount already
             paid for a cancelled order is refunded in full to the original payment method.
           </li>
-          <li>Quantities per order may be limited for regulated products. Bulk requirements are handled under our <Link href="/bulk-order-terms">Bulk Order Terms</Link>.</li>
+          <li>Quantities per order may be limited by available stock. Bulk requirements are handled under our <Link href="/bulk-order-terms">Bulk Order Terms</Link>.</li>
         </ul>
       </>
     ),
@@ -99,10 +97,10 @@ const sections = [
     content: (
       <>
         <p>
-          We take care to describe each product accurately, including the active ingredient, formulation and pack size.
-          Images are indicative; packaging may vary from batch to batch. Information on the Marketplace is not
-          agronomic advice: crop suitability, dose and timing must be taken from the product label and, where needed,
-          from a qualified agricultural extension officer or agronomist.
+          We take care to describe each product accurately, including the brand, variety or model, and pack size.
+          Images are indicative; packaging may vary from lot to lot. Information on the Marketplace is not agronomic
+          advice: crop suitability, sowing time and placement must be taken from the product packet or manual and,
+          where needed, from a qualified agricultural extension officer or agronomist.
         </p>
       </>
     ),
@@ -114,8 +112,8 @@ const sections = [
       <p>
         Delivery timelines and charges are governed by our <Link href="/shipping-policy">Shipping Policy</Link>; order
         cancellation by our <Link href="/cancellation-policy">Cancellation Policy</Link>; and damaged, wrong or
-        expired-on-arrival items by our <Link href="/return-refund-policy">Return &amp; Refund Policy</Link>. Opened or
-        used agro-inputs (seeds, fertilisers, bio-inputs and any chemical) cannot be returned.
+        expired-on-arrival items by our <Link href="/return-refund-policy">Return &amp; Refund Policy</Link>. Opened seed
+        packets and used equipment cannot be returned.
       </p>
     ),
   },
@@ -155,9 +153,10 @@ const sections = [
         <p>
           Products are supplied in sealed manufacturer packaging and conform to the specification stated on the label
           at the time of dispatch. Beyond this, and to the extent permitted by law, the Marketplace and its content are
-          provided “as is” without warranties of any kind. In particular, we do not warrant crop yield, pest-control
-          outcomes or suitability for a specific field condition — results depend on weather, timing, application
-          method, soil and pest pressure, which are outside our control.
+          provided “as is” without warranties of any kind. In particular, we do not warrant crop yield, trap catches or
+          suitability for a specific field condition — results depend on weather, timing, sowing or placement, soil and
+          pest pressure, which are outside our control. Machinery carries the manufacturer&apos;s warranty as stated in
+          the box.
         </p>
       </>
     ),
@@ -171,7 +170,7 @@ const sections = [
           Nothing in these Terms limits liability that cannot be limited under Indian law, including under the Consumer
           Protection Act, 2019. Subject to that, our total liability for any claim arising from an order is limited to
           the amount paid for that order, and we are not liable for indirect or consequential loss such as loss of crop,
-          profit or goodwill, or for losses caused by use of a product contrary to its label.
+          profit or goodwill, or for losses caused by use of a product contrary to its packet, label or manual.
         </p>
       </>
     ),
@@ -182,8 +181,8 @@ const sections = [
     content: (
       <p>
         You agree to indemnify Surya Enterprises against claims, losses and costs arising from your breach of these
-        Terms or of applicable law, including use of a product in a manner not permitted on its label or resale without
-        the required licence.
+        Terms or of applicable law, including use of a product in a manner not permitted by its packet, label or manual,
+        or resale without the required licence.
       </p>
     ),
   },
@@ -230,7 +229,7 @@ export default function TermsPage() {
     <PolicyLayout
       eyebrow="Legal"
       title="Terms of Use"
-      intro="The rules for using the Surya Enterprises marketplace and buying crop-protection products from us."
+      intro="The rules for using the Surya Enterprises marketplace and buying seeds, traps and farm machinery from us."
       sections={sections}
     />
   );

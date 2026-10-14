@@ -11,9 +11,9 @@ import { getSubcategories } from "../products/data/catalog.server";
 
 // `download` links point at a static file (plain anchor), not a route.
 type SitemapLink = { name: string; href: string; desc?: string; soon?: boolean; download?: boolean };
-type SitemapGroup = { id: string; title: string; icon: React.ComponentType<{ className?: string; strokeWidth?: number }>; links: SitemapLink[] };
+type SitemapSection = { id: string; title: string; icon: React.ComponentType<{ className?: string; strokeWidth?: number }>; links: SitemapLink[] };
 
-const groups: SitemapGroup[] = [
+const groups: SitemapSection[] = [
   {
     id: "shop",
     title: "Shop",
@@ -29,7 +29,7 @@ const groups: SitemapGroup[] = [
           ...(subs.length > 6 ? [{ name: `${c.name} › all ${subs.length} subcategories`, href: `/c/${c.slug}`, desc: "Use the Subcategory filter on the category page" }] : []),
         ];
       }),
-      { name: "Bulk & institutional", href: "/products/institutional", desc: "Technical-grade products with listed purity; quotes on request" },
+      { name: "Bulk & institutional", href: "/products/institutional", desc: "Bulk seeds, sprayers, tarpaulins and equipment; quotes on request" },
       { name: "Search", href: "/search", desc: "Search by product name, brand, crop or pack size" },
     ],
   },
@@ -52,9 +52,9 @@ const groups: SitemapGroup[] = [
     title: "Customer service",
     icon: Headset,
     links: [
-      { name: "FAQs", href: "/faqs", desc: "Orders, payments, delivery, returns, product safety" },
+      { name: "FAQs", href: "/faqs", desc: "Orders, payments, delivery, returns, product questions" },
       { name: "Contact us", href: "/contact", desc: `Helpline ${SITE.helpline.display}, email and office addresses` },
-      { name: "Shipping & delivery", href: "/shipping-policy", desc: "Coverage, dispatch time, charges, hazardous-goods handling" },
+      { name: "Shipping & delivery", href: "/shipping-policy", desc: "Coverage, dispatch time, charges, receiving your order" },
       { name: "Returns & refunds", href: "/return-refund-policy", desc: "Claims for damaged, wrong or expired-on-arrival items" },
       { name: "Cancellations", href: "/cancellation-policy", desc: "Cancelling before dispatch and refund timelines" },
       { name: "Payments", href: "/payment-policy", desc: "UPI via PayU, pending and failed payments" },
@@ -74,7 +74,7 @@ const groups: SitemapGroup[] = [
         download: true,
       },
       { name: "Management", href: "/management", desc: "Leadership team" },
-      { name: "Quality assurance", href: "/quality-assurance", desc: "Manufacturing process, ISO and ZED certification" },
+      { name: "Quality assurance", href: "/quality-assurance", desc: "Quality checks, ISO and ZED certification" },
       { name: "Careers", href: "/career", desc: "Open positions across India" },
     ],
   },

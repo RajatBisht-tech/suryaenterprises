@@ -52,23 +52,15 @@ const sections = [
     ),
   },
   {
-    id: "hazardous",
-    title: "Pesticides and hazardous goods",
+    id: "packaging",
+    title: "How orders are packed",
     content: (
-      <>
-        <p>{shipping.hazardousNote}</p>
-        <p>
-          Products marked “Not for online sale” on the Marketplace (pesticides, growth regulators, urea, animal-husbandry
-          products, adjuvants and knives) can be enquired about through the{" "}
-          <Link href="/products/institutional">institutional desk</Link> or bought in person at the store; they are not
-          added to a cart or dispatched by courier.
-        </p>
-        <ul>
-          <li>Liquid inputs that we do ship (bio-fertilisers, biostimulants, lures) are packed upright with absorbent material; powders and granules are double-bagged where needed, and every consignment carries the handling markings required for the product class.</li>
-          <li>Delivery staff are not trained applicators. Please do not ask them to open, decant or demonstrate a product.</li>
-          <li>Keep delivered products — and anything collected from the store — away from children, food, feed and water sources until stored properly (see our <Link href="/product-safety-disclaimer">Product Safety Disclaimer</Link>).</li>
-        </ul>
-      </>
+      <ul>
+        <li>Seed packets travel in sealed manufacturer packs inside a padded outer box or courier bag, away from moisture.</li>
+        <li>Traps, lures and repellents are packed in their original sealed packs; liquids are packed upright with absorbent material.</li>
+        <li>Sprayers, tarpaulins, tools and machinery ship in the manufacturer&apos;s carton, strapped or crated where the carrier requires it, with the warranty card and manual inside.</li>
+        <li>Delivery staff are not trained to assemble or demonstrate equipment. Please do not ask them to open or test a product.</li>
+      </ul>
     ),
   },
   {
@@ -78,8 +70,8 @@ const sections = [
       <>
         <p>{shipping.restrictedAreas}</p>
         <p>
-          Some states or districts restrict the movement or sale of specific molecules. If a product in your order cannot
-          legally be shipped to your address, we will cancel that item and refund it in full.
+          A few seed varieties are not notified for sale in particular states; the product page lists those states. If a
+          product in your order cannot be shipped to your address, we will cancel that item and refund it in full.
         </p>
       </>
     ),
@@ -90,10 +82,10 @@ const sections = [
     content: (
       <>
         <ul>
-          <li>Please check the outer packaging for damage or leakage before signing for the consignment. If it is visibly damaged, note this with the delivery staff or refuse delivery.</li>
-          <li>Open the parcel soon after delivery and check that the products, quantities, pack sizes and expiry dates match your order.</li>
+          <li>Please check the outer packaging for damage before signing for the consignment. If it is visibly damaged, note this with the delivery staff or refuse delivery.</li>
+          <li>Open the parcel soon after delivery and check that the products, quantities, pack sizes and (for seeds) lot numbers and expiry dates match your order.</li>
           <li>
-            Report damage, leakage, shortage, wrong items or expired stock within{" "}
+            Report damage, shortage, wrong items, defective equipment or expired stock within{" "}
             <strong>{SITE.policies.returns.claimWindowDays} days of delivery</strong> with photographs, as explained in our{" "}
             <Link href="/return-refund-policy">Return &amp; Refund Policy</Link>.
           </li>
@@ -130,7 +122,7 @@ export default function ShippingPolicyPage() {
     <PolicyLayout
       eyebrow="Customer service"
       title="Shipping & Delivery Policy"
-      intro="Where we deliver, how long dispatch takes, what it costs, and which products (pesticides, urea and other regulated goods) are sold only at our store and institutional desk."
+      intro="Where we deliver, how long dispatch takes, what it costs, how seeds and equipment are packed, and what to check when your order arrives."
       sections={sections}
     />
   );

@@ -994,7 +994,7 @@ export default function CheckoutPage() {
               <Link href="/terms" className="font-semibold text-brand hover:underline">Terms of Use</Link>,{" "}
               <Link href="/shipping-policy" className="font-semibold text-brand hover:underline">Shipping Policy</Link> and{" "}
               <Link href="/return-refund-policy" className="font-semibold text-brand hover:underline">Return &amp; Refund Policy</Link>.
-              Pesticides must be used only as directed on the label.
+              Use every product only as directed on its label or manual.
             </p>
           </section>
         </form>

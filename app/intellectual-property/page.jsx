@@ -45,8 +45,8 @@ const sections = [
     title: "Counterfeit and look-alike products",
     content: (
       <p>
-        Counterfeit pesticides endanger crops and people. If you come across a product that imitates a Surya Enterprises
-        product or packaging, or a website or seller claiming to be us, please tell us at{" "}
+        Counterfeit seeds and spare parts endanger crops and people. If you come across a product that imitates a product
+        or packaging sold by Surya Enterprises, or a website or seller claiming to be us, please tell us at{" "}
         <a href={`mailto:${takedown}`}>{takedown}</a>. Genuine products are sold by us directly through this website and
         through our authorised channels.
       </p>

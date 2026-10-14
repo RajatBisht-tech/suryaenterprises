@@ -11,8 +11,8 @@ const sections = [
     content: (
       <>
         <p>
-          These terms apply to quotation-based orders from co-operatives, FPOs, dealer networks, plantations, government
-          and institutional buyers, and to the technical-grade products listed on our{" "}
+          These terms apply to quotation-based orders from co-operatives, FPOs, dealer networks, plantations, universities,
+          government and institutional buyers for bulk seeds, sprayers, tarpaulins and equipment — see our{" "}
           <Link href="/products/institutional">Bulk &amp; institutional</Link> page. Retail orders placed through the
           cart are governed by our <Link href="/terms">Terms of Use</Link>.
         </p>
@@ -28,7 +28,7 @@ const sections = [
     content: (
       <>
         <ol>
-          <li>Send your requirement (product, grade/purity, quantity, packaging, delivery location and timeline) to <a href={`mailto:${SITE.email}`}>{SITE.email}</a> or call {SITE.helpline.display}.</li>
+          <li>Send your requirement (product, variety or model, quantity, packaging, delivery location and timeline) to <a href={`mailto:${SITE.email}`}>{SITE.email}</a> or call {SITE.helpline.display}.</li>
           <li>We issue a written quotation stating price, GST, packaging, delivery terms, lead time and payment terms.</li>
           <li>A quotation is valid for <strong>{bulk.quoteValidityDays} days</strong> from its date unless stated otherwise.</li>
           <li>An order is confirmed when you accept the quotation in writing (email or purchase order) and the payment terms below are met.</li>
@@ -55,9 +55,9 @@ const sections = [
     title: "Licences and compliance",
     content: (
       <ul>
-        <li>Buyers of technical-grade or bulk pesticides must hold the licences required under the Insecticides Act, 1968 and Rules, 1971 for manufacture, formulation, stocking or sale, as applicable, and provide copies before dispatch.</li>
+        <li>Buyers who stock or resell seeds must hold the seed licence required by their State Agriculture Department under the Seeds (Control) Order, 1983, and provide a copy before dispatch.</li>
         <li>Products are supplied for lawful use in India only. Export requires separate written agreement and compliance with export regulations.</li>
-        <li>The buyer is responsible for compliance with state movement restrictions, storage licensing and safe handling at its premises.</li>
+        <li>The buyer is responsible for compliance with state-level restrictions on seed varieties, storage conditions and safe operation of equipment at its premises.</li>
       </ul>
     ),
   },
@@ -68,7 +68,7 @@ const sections = [
       <ul>
         <li>Standard packaging is stated in the quotation; custom packaging and private labelling are available on request and may extend lead time.</li>
         <li>Delivery terms (ex-works, FOR destination, etc.) and freight responsibility are stated in the quotation. Unless stated otherwise, risk passes on delivery to the carrier for ex-works terms and on delivery at destination for FOR terms.</li>
-        <li>Hazardous-goods documentation (safety data sheet, transport emergency card) accompanies every consignment.</li>
+        <li>A packing list and GST invoice accompany every consignment; machinery ships with the manufacturer&apos;s warranty cards and manuals.</li>
         <li>Shortages or transit damage must be noted on the carrier’s delivery document and reported within 48 hours with photographs.</li>
       </ul>
     ),
@@ -78,10 +78,11 @@ const sections = [
     title: "Quality, samples and claims",
     content: (
       <ul>
-        <li>Each lot is supplied with a certificate of analysis stating the assay against the quoted specification.</li>
+        <li>Seed lots are supplied in the manufacturer&apos;s sealed packs with the lot number, germination percentage, physical purity and validity printed on the pack as the Seeds Act, 1966 requires.</li>
+        <li>Machinery and equipment are supplied new, in the manufacturer&apos;s carton, with the warranty card and manual; warranty service is provided through the manufacturer&apos;s network.</li>
         <li>Pre-shipment samples can be provided on request; acceptance of the sample constitutes acceptance of the specification.</li>
-        <li>Quality claims must be raised within 15 days of delivery with the lot number and a retained sample. Disputed results are referred to a mutually agreed NABL-accredited laboratory, whose finding is final.</li>
-        <li>Our liability for a quality claim is limited to replacement of the non-conforming material or refund of its price.</li>
+        <li>Quality claims must be raised within 15 days of delivery with the lot or serial number and a retained sample or the unit itself. Disputed seed-quality results are referred to a notified seed-testing laboratory, whose finding is final.</li>
+        <li>Our liability for a quality claim is limited to replacement of the non-conforming goods or refund of their price.</li>
       </ul>
     ),
   },
@@ -90,9 +91,8 @@ const sections = [
     title: "Cancellation of bulk orders",
     content: (
       <p>
-        Because material may be produced or packed to order, a confirmed bulk order can be cancelled only with our
-        written agreement. Costs already incurred for custom packaging, labels or production may be deducted from any
-        refund.
+        Because goods may be procured or packed to order, a confirmed bulk order can be cancelled only with our written
+        agreement. Costs already incurred for custom packaging, labels or procurement may be deducted from any refund.
       </p>
     ),
   },
@@ -113,7 +113,7 @@ export default function BulkOrderTermsPage() {
     <PolicyLayout
       eyebrow="Institutional"
       title="Bulk Order Terms"
-      intro="Quotations, payment and credit, licences, delivery and quality terms for institutional and technical-grade orders."
+      intro="Quotations, payment and credit, licences, delivery and quality terms for bulk orders of seeds, sprayers, tarpaulins and equipment."
       sections={sections}
       related={[
         { name: "Bulk & institutional range", href: "/products/institutional" },

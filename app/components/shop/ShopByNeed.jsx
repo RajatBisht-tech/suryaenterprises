@@ -1,10 +1,10 @@
 import Image from "next/image";
 import Link from "next/link";
 
-// "Shop by need" round tiles: the five live categories with illustrated
-// scenes (seed packet, insect pest, nutrient sack, farm tools, livestock).
-// Counts show online-sellable listings only; a category with none (animal
-// husbandry) gets a "Store & quotation only" tag instead of a count.
+// "Shop by need" round tiles: six needs (config/taxonomy.js SHOP_BY_NEED)
+// with illustrated scenes and live listing counts from catalog.server.js
+// getShopByNeed(). Tiles link to a category or to a pre-filtered
+// farm-machinery listing (sprayers, tools, covers, irrigation).
 function Tile({ src }) {
   return (
     <span className="relative block aspect-square w-full max-w-[112px] overflow-hidden rounded-full ring-1 ring-black/5 transition group-hover:ring-2 group-hover:ring-brand">
@@ -22,7 +22,7 @@ function Tile({ src }) {
   );
 }
 
-export default function ShopByNeed({ categories }) {
+export default function ShopByNeed({ needs }) {
   return (
     <section aria-labelledby="need-heading" className="rounded-lg border border-line bg-white px-3 py-3 sm:px-4">
       <div className="flex items-end justify-between">
@@ -36,23 +36,15 @@ export default function ShopByNeed({ categories }) {
           All categories
         </Link>
       </div>
-      <ul className="no-scrollbar -mx-3 mt-3 flex gap-1 overflow-x-auto px-3 sm:mx-0 sm:grid sm:grid-cols-5 sm:gap-3 sm:px-0">
-        {categories.map((c) => (
-          <li key={c.slug} className="w-[108px] shrink-0 sm:w-auto">
-            <Link href={`/c/${c.slug}`} className="group flex h-full flex-col items-center gap-2 rounded-lg p-1.5 text-center">
-              <Tile src={c.illustration} />
+      <ul className="no-scrollbar -mx-3 mt-3 flex gap-1 overflow-x-auto px-3 sm:mx-0 sm:grid sm:grid-cols-3 sm:gap-3 sm:px-0 lg:grid-cols-6">
+        {needs.map((n) => (
+          <li key={n.slug} className="w-[108px] shrink-0 sm:w-auto">
+            <Link href={n.href} className="group flex h-full flex-col items-center gap-2 rounded-lg p-1.5 text-center">
+              <Tile src={n.illustration} />
               <span className="leading-tight">
-                <span className="block text-[13px] font-semibold text-ink group-hover:text-brand">{c.shortName}</span>
-                <span className="block text-[11px] leading-[1.35] text-ink-2">{c.tileNote ?? c.need}</span>
-                {c.storeOnly ? (
-                  <span className="mt-1 inline-block rounded-sm bg-notice-tint px-1.5 py-px text-[9.5px] font-bold uppercase tracking-wider text-notice">
-                    Store &amp; quotation only
-                  </span>
-                ) : (
-                  <span className="mt-0.5 block text-[11px] tabular-nums text-ink-3">
-                    {(c.onlineCount ?? c.count).toLocaleString("en-IN")} products online
-                  </span>
-                )}
+                <span className="block text-[13px] font-semibold text-ink group-hover:text-brand">{n.title}</span>
+                <span className="block text-[11px] leading-[1.35] text-ink-2">{n.note}</span>
+                <span className="mt-0.5 block text-[11px] tabular-nums text-ink-3">{n.count.toLocaleString("en-IN")} products</span>
               </span>
             </Link>
           </li>

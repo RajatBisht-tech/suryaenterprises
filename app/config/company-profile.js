@@ -11,6 +11,10 @@
 // and grievance-officer details are read from site.js so they are never
 // duplicated. Catalogue figures come from app/products/data/catalog-facts.js,
 // which the catalogue import regenerates, so they are always the live numbers.
+//
+// The business sells three product lines only — seeds, traps & repellents and
+// farm machinery (app/config/taxonomy.js). Example products and brands below
+// are verified against products.json by the PDF build script.
 // ---------------------------------------------------------------------------
 // Explicit ".js" so Node can import this module directly from scripts/.
 import { SITE } from "./site.js";
@@ -21,13 +25,9 @@ const fmt = (n) => n.toLocaleString("en-IN");
 
 // Brands named in the positioning line. Every one is verified against the
 // catalogue by the PDF build script.
-const EXAMPLE_BRANDS = ["Syngenta", "Namdhari Seeds", "East West", "Bayer", "Dhanuka", "KisanKraft"];
+const EXAMPLE_BRANDS = ["Syngenta", "Namdhari Seeds", "East West", "Bayer", "Barrix", "KisanKraft"];
 const brandList = `${EXAMPLE_BRANDS.slice(0, -1).join(", ")} and ${EXAMPLE_BRANDS.at(-1)}`;
-const CATEGORY_LIST = "seeds, crop protection, crop nutrition, farm machinery and animal husbandry";
-// Goods listed online but sold only at the store / institutional desk
-// (app/config/sale-restrictions.js). Keep this sentence in step with the rules.
-const RESTRICTED_GOODS =
-  "pesticides (insecticides, fungicides, herbicides, plant growth regulators), urea, animal-husbandry products, adjuvants and other agricultural chemicals, and knives";
+const CATEGORY_LIST = "seeds, traps & repellents and farm machinery";
 
 export const COMPANY_PROFILE = {
   founded: FOUNDED,
@@ -41,8 +41,7 @@ export const COMPANY_PROFILE = {
   website: { display: "www.suryaenter.in", url: "https://www.suryaenter.in" },
 
   // One-line nature of business (identity block of the PDF).
-  natureOfBusiness:
-    "Licensed agri-inputs marketplace offering leading brands alongside Surya Enterprises' own crop-protection range",
+  natureOfBusiness: "Agri-inputs marketplace for seeds, farm machinery and non-chemical crop care; licensed to trade",
 
   // The generated PDF (public/downloads). `pages` is asserted by the build script.
   pdf: {
@@ -82,16 +81,15 @@ export const COMPANY_PROFILE = {
   // ---- PDF section 1: nature of business ------------------------------------
   nature: {
     paragraph:
-      `${SITE.legalName}, trading as Surya Enterprises, is a licensed agri-inputs marketplace based at Rajdhani Krishi Mandi, Jaipur, with a corporate office in New Delhi. It sells ${CATEGORY_LIST} products from leading brands (${brandList}) alongside its own crop-protection range, directly to farmers and institutional buyers through its website, its Jaipur store and an institutional desk. Pesticides, urea and other regulated goods are not sold online. Founded in ${FOUNDED} as a backend support channel for the agri-inputs supply chain, the company was incorporated to build the Surya Marketplace.`,
+      `${SITE.legalName}, trading as Surya Enterprises, is a licensed agri-inputs marketplace based at Rajdhani Krishi Mandi, Jaipur, with a corporate office in New Delhi. It sells ${CATEGORY_LIST} — vegetable, field, forage and flower seeds; pheromone traps, lures, sticky traps and animal repellents; sprayers, tarpaulins, hand tools, tillers and irrigation equipment — from leading brands (${brandList}) directly to farmers and institutional buyers through its website, its Jaipur store and an institutional desk. Founded in ${FOUNDED} as a backend support channel for the agri-inputs supply chain, the company was incorporated to build the Surya Marketplace.`,
     bullets: [
-      "Licensed agri-inputs marketplace: genuine products from leading brands alongside Surya's own crop-protection range (ISO and ZED certified; marked “Manufacturer direct” online).",
+      "Licensed agri-inputs marketplace: genuine products from leading seed, crop-care and machinery brands, supplied in sealed manufacturer packs (ISO and ZED certified business).",
       "Sells directly to farmers (B2C, 70% of sales) and to universities and institutes, bulk enterprises, dealers and co-operatives (B2B, 30%).",
-      // {onlineProducts}, {onlineSkus}, {onlineBrands}, {restrictedProducts} are
-      // computed from products.json + the sale-restriction rules by the build
-      // script (saleFacts); {priceRange} is filled with ₹ (brand fonts embedded) or "INR".
-      `Online catalogue: {onlineProducts} products ({onlineSkus} pack sizes) from {onlineBrands} brands can be bought online — seeds, traps & lures, crop nutrition and farm machinery — priced {priceRange} per pack; {restrictedProducts} further listed products are sold only at the store and institutional desk.`,
-      "Not sold online: pesticides (insecticides, fungicides, herbicides, PGRs), urea, animal-husbandry products, adjuvants and other agricultural chemicals, and knives are marked “Not for online sale” and supplied only at the Jaipur store and through the institutional desk against a valid requirement.",
-      "Bulk quantities, technical grades and custom packaging by quotation through the institutional desk; every online product is also sold at the Jaipur store.",
+      // {products}, {skus}, {brands} are the live products.json figures; {priceRange}
+      // is filled with ₹ (brand fonts embedded) or "INR" by the build script.
+      `Catalogue: {products} products ({skus} pack sizes) from {brands} brands — ${CATEGORY_LIST} — priced {priceRange} per pack; every pack size is its own listing with its own price.`,
+      "Three product lines only: seeds; traps, lures and animal repellents (non-chemical crop care); farm machinery and equipment. Nothing else is stocked or sold.",
+      "Bulk quantities and custom packaging by quotation through the institutional desk; every online product is also sold at the Jaipur store.",
     ],
   },
 
@@ -102,12 +100,12 @@ export const COMPANY_PROFILE = {
     paragraphs: [
       `Surya Enterprises began in ${FOUNDED} as a backend support channel for the agriculture-products supply chain — the operations layer that keeps inputs moving from manufacturers to the distributors, wholesalers and retailers who sell to farmers.`,
       "Working inside that chain, the founders watched the same pattern repeat at every hand-off: each layer added its margin, stock went missing exactly when crops needed it, and the farmer at the end paid the most while knowing the least about what was in the pack.",
-      "So the company was incorporated as SURYA ENTERPRISES and built the Surya Marketplace — a licensed channel that sells leading brands and Surya's own range to farmers and institutions without the layers in between.",
+      "So the company was incorporated as SURYA ENTERPRISES and built the Surya Marketplace — a licensed channel that sells seeds, traps & repellents and farm machinery from leading brands to farmers and institutions without the layers in between.",
     ],
     milestones: [
       { when: String(FOUNDED), title: "Backend support channel", text: "Operations support for the agri-inputs supply chain." },
       { when: "Inside the chain", title: "The problem, first-hand", text: "Layered margins, stock-outs and counterfeit packs seen at every hand-off." },
-      { when: "Today", title: "SURYA ENTERPRISES", text: "Incorporated; the Surya Marketplace sells leading brands and Surya's own range direct to farmers and institutions." },
+      { when: "Today", title: "SURYA ENTERPRISES", text: "Incorporated; the Surya Marketplace sells seeds, traps & repellents and farm machinery from leading brands direct to farmers and institutions." },
     ],
   },
 
@@ -116,7 +114,7 @@ export const COMPANY_PROFILE = {
     eyebrow: "The problem we saw",
     title: "The farmer pays the most and knows the least",
     intro:
-      "A ₹500–₹1,000 pack of crop protection passes through several hands before it reaches a field in a district like Sikar. Each hand takes a margin; none of them owes the farmer an explanation.",
+      "A ₹500 pack of hybrid seed or a ₹2,000 knapsack sprayer passes through several hands before it reaches a field in a district like Sikar. Each hand takes a margin; none of them owes the farmer an explanation.",
     // The conventional route of a pack from factory to field.
     chain: ["Manufacturer", "Distributor", "Wholesaler", "Retailer", "Commission agent", "Farmer"],
     cards: [
@@ -127,18 +125,18 @@ export const COMPANY_PROFILE = {
       },
       {
         icon: "calendar",
-        title: "Stock-outs at sowing and spraying time",
-        text: "Inputs are needed in short windows: sowing, and the days when a pest or disease first shows. When the local shop is out of stock in that window, the crop pays for it.",
+        title: "Stock-outs at sowing time",
+        text: "Inputs are needed in short windows: the sowing fortnight, and the weeks when a pest first shows in the field and traps must go up. When the local shop is out of stock in that window, the crop pays for it.",
       },
       {
         icon: "alert",
-        title: "Counterfeit and adulterated inputs",
-        text: "With no transparent origin, a farmer cannot tell a genuine pack from a counterfeit or adulterated one — until the spray does not work.",
+        title: "Counterfeit and mislabelled packs",
+        text: "With no transparent origin, a farmer cannot tell a genuine seed pack from a counterfeit or re-bagged one — until the field fails to germinate.",
       },
       {
         icon: "eyeoff",
         title: "No guidance, no price transparency",
-        text: "The farmer paying the most gets the least: no technical guidance on what to use, and no way to see what the product should actually cost.",
+        text: "The farmer paying the most gets the least: no guidance on which variety or tool suits the field, and no way to see what the product should actually cost.",
       },
     ],
   },
@@ -148,7 +146,7 @@ export const COMPANY_PROFILE = {
     eyebrow: "Our answer",
     title: "The Surya Marketplace",
     intro:
-      "A licensed marketplace that delivers agri-inputs directly to farmers. It removes the middlemen and the commissions they add, so the farmer's money goes into the product.",
+      "A licensed marketplace that delivers seeds, traps and farm machinery directly to farmers. It removes the middlemen and the commissions they add, so the farmer's money goes into the product.",
     quote: "The farmer's money goes into the product — and the farmer relies on us.",
     chain: ["Surya Enterprises", "Farmer"],
     points: [
@@ -159,13 +157,13 @@ export const COMPANY_PROFILE = {
       },
       {
         icon: "label",
-        title: "Licensed to sell agro-inputs",
-        text: "Surya Enterprises is licensed to sell agro-inputs in India, and every listing shows the brand, category, pack size and SKU.",
+        title: "Licensed to trade in agri-inputs",
+        text: "Surya Enterprises is licensed to trade in agri-inputs in India, and every listing shows the brand, category, pack size and SKU.",
       },
       {
-        icon: "factory",
-        title: "Leading brands and our own range",
-        text: `Genuine packs from ${brandList} and other leading brands, alongside Surya Enterprises' own crop-protection range — ISO and ZED (Zero Defect Zero Effect) certified and marked “Manufacturer direct”.`,
+        icon: "shield",
+        title: "Genuine products from leading brands",
+        text: `Sealed manufacturer packs from ${brandList} and other leading seed, crop-care and machinery brands — nothing from unknown resellers.`,
       },
       {
         icon: "sprout",
@@ -176,69 +174,34 @@ export const COMPANY_PROFILE = {
   },
 
   // ---- Product portfolio ------------------------------------------------------
-  // Lines with `online: true` can be bought on the website (categorySlug →
-  // /c/<slug>); `online: false` lines are listed online but sold only at the
-  // store and through the institutional desk (app/config/sale-restrictions.js).
+  // Every line is sold online (categorySlug → /c/<slug>) and at the Jaipur store.
   // Example product names are verified against products.json by the build script.
   productLines: [
     {
       name: "Seeds",
       detail: "Vegetable, fruit, flower, field and forage seeds",
       icon: "wheat",
-      online: true,
       categorySlug: "seeds",
       examples: ["Syngenta OH-102 Okra (Bhendi) Seeds", "Namdhari NS 22 Cabbage Seeds", "RUDRA CHILLI", "Abhilash Tomato Seeds"],
     },
     {
-      name: "Crop protection",
-      detail: "Traps & lures and animal repellents online; pesticides and bio-controls at the store",
+      name: "Traps & repellents",
+      detail: "Pheromone traps and lures, sticky traps and animal repellents",
       icon: "bug",
-      online: true,
-      categorySlug: "crop-protection",
+      categorySlug: "traps-and-repellents",
       examples: ["Barrix Catch Fruit Fly Lure", "Barrix Catch Vegetable Fly Lure + Trap", "Biosun Ratsun Animal Repellents", "DR SUIBIO ORGANIC ANT REPELLENT"],
     },
     {
-      name: "Crop nutrition",
-      detail: "Fertilisers, bio-fertilisers, biostimulants and organic inputs",
-      icon: "sack",
-      online: true,
-      categorySlug: "crop-nutrition",
-      examples: ["Rallis Surplus Micronutrient Fertilizer", "Allborich Liquid Micronutrient Fertilizer", "IFFCO Humetsu Humic Acid", "PHOSPHO BACTERIA BIO FERTILIZER"],
-    },
-    {
       name: "Farm machinery",
-      detail: "Sprayers, brush cutters, tillers, hand tools, tarpaulins and mulches",
+      detail: "Sprayers, brush cutters, tillers, hand tools, tarpaulins, mulches and irrigation",
       icon: "tools",
-      online: true,
       categorySlug: "farm-machinery",
       examples: ["AMH16 HITECH KNAPSACK SPRAYER", "Anil Packaging HDPE Tarpaulin 250 GSM", "MANUAL SEEDER KK MSD S01", "Mipatex Tree Weed Mat"],
-    },
-    {
-      name: "Animal husbandry",
-      detail: "Cattle feed, milking equipment, poultry and fish care",
-      icon: "cattle",
-      online: false,
-      categorySlug: "animal-husbandry",
-      availability: "Store & institutional desk only — not sold online",
-      examples: ["GODHAN GS 120 MILKING MACHINE", "Century Biocare Rumistar", "MEENAKSHI CHICK DRINKER", "ECOWEALTH SILAGE CULTURE"],
-    },
-    {
-      name: "Pesticides (insecticides, fungicides, herbicides, PGRs) & urea",
-      detail: "Also animal-husbandry products, adjuvants and other agricultural chemicals, and knives — listed online for information only",
-      icon: "alert",
-      online: false,
-      categorySlug: null,
-      availability: "Store & institutional desk only — not sold online",
-      examples: ["Confidor Insecticide", "Cuman L Fungicide", "Dhanuka Barrier Herbicide (Metribuzin 70% WP)", "IFFCO Nano Urea Plus Fertilizers"],
     },
   ],
   availability: {
     online: { badge: "Online now", channels: "Website + store" },
-    offline: {
-      badge: "Store & quotation only",
-      channels: "Store & institutional desk only — not sold online",
-      note: `${RESTRICTED_GOODS[0].toUpperCase()}${RESTRICTED_GOODS.slice(1)} are listed on the website for information but are not sold online: they are available at the Jaipur store and by quotation through the institutional desk. Bulk quantities, technical grades and custom packaging are also supplied by quotation, and every online product can be bought at the store.`,
-    },
+    note: "Every product is sold on the website and at the Jaipur store. Bulk quantities and custom packaging are supplied by quotation through the institutional desk.",
   },
 
   // ---- Sales channels -----------------------------------------------------------
@@ -249,8 +212,8 @@ export const COMPANY_PROFILE = {
       icon: "globe",
       title: "Website",
       detail: "www.suryaenter.in",
-      text: "Browse by category, brand, crop and pack size. Pay by UPI via PayU; dispatch to serviceable PIN codes across India. Pesticides, urea and other regulated goods are shown for information only and cannot be ordered online.",
-      how: "Online orders at www.suryaenter.in (browse by category, brand, crop and pack size); dispatched to serviceable PIN codes across India. Regulated goods cannot be ordered online.",
+      text: "Browse by category, brand, crop and pack size. Pay by UPI via PayU; dispatch to serviceable PIN codes across India.",
+      how: "Online orders at www.suryaenter.in (browse by category, brand, crop and pack size); dispatched to serviceable PIN codes across India.",
       payment: SITE.payments.join(", "),
       href: "/products",
       cta: "Shop online",
@@ -271,7 +234,7 @@ export const COMPANY_PROFILE = {
       icon: "building",
       title: "Institutional desk",
       detail: "Quotations · GST invoice",
-      text: "Bulk supply and technical grades with listed purity for universities, institutes, bulk enterprises, dealers and co-operatives.",
+      text: "Bulk seeds, sprayers, tarpaulins and equipment for universities, institutes, bulk enterprises, dealers and co-operatives — by quotation.",
       how: `Quotations by phone (${SITE.helpline.display}) or email (${SITE.email}); GST invoice issued for every supply.`,
       payment: `Bank transfer / UPI. ${SITE.policies.bulk.creditTerms}`,
       href: "/products/institutional",
@@ -300,7 +263,7 @@ export const COMPANY_PROFILE = {
   ],
 
   paymentPartners: ["PayU", "Razorpay"],
-  // Agro-input sales licences — rendered only when SITE.licences is filled.
+  // Agri-input trade licences — rendered only when SITE.licences is filled.
   licences: SITE.licences ?? [],
   licencesFallback: "Licence details available on request.",
 

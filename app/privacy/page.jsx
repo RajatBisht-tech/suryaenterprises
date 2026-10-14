@@ -84,7 +84,7 @@ const sections = [
         <ul>
           <li><strong>Fulfilling orders</strong> — creating the payment request, confirming payment, packing, dispatching and delivering your products, and issuing a GST invoice.</li>
           <li><strong>Customer support</strong> — answering queries, handling claims for damaged or wrong items, cancellations and refunds.</li>
-          <li><strong>Legal and regulatory compliance</strong> — maintaining sale records required under GST law and the Insecticides Act, 1968 and rules, and responding to lawful requests from authorities.</li>
+          <li><strong>Legal and regulatory compliance</strong> — maintaining sale records required under GST law and the Seeds Act, 1966 and rules, and responding to lawful requests from authorities.</li>
           <li><strong>Safety and security</strong> — preventing fraud, misuse and unauthorised access to the website.</li>
           <li><strong>Communications</strong> — order and payment updates by SMS, email or phone. Marketing messages are sent only if you opt in (our newsletter sign-up is not yet live and collects nothing today).</li>
         </ul>

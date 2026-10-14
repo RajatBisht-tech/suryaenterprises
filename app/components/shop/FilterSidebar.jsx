@@ -338,9 +338,8 @@ export default function FilterSidebar({ basePath, state, facets, scope, category
         />
       </Section>
 
-      {/* Excludes "Not for online sale" listings (store & quotation only) as well as out-of-stock ones. */}
       <Section title="Availability">
-        <CheckRow checked={state.inStock} label="Available online" onChange={() => navigate({ inStock: !state.inStock })} />
+        <CheckRow checked={state.inStock} label="In stock" onChange={() => navigate({ inStock: !state.inStock })} />
       </Section>
     </div>
   );
