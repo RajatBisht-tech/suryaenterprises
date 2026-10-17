@@ -544,7 +544,7 @@ export default function CheckoutPage() {
                sticky right column from lg up)
           ========================== */}
 
-          <aside aria-label="Order summary" className="lg:sticky lg:top-[76px] lg:order-2">
+          <aside aria-label="Order summary" suppressHydrationWarning className="lg:sticky lg:top-[76px] lg:order-2">
             <div className="rounded-lg border border-line bg-white">
               {/* Phone: CSS-only expand/collapse — no extra state */}
               <input type="checkbox" id="summary-toggle" className="peer sr-only lg:hidden" />
@@ -555,11 +555,11 @@ export default function CheckoutPage() {
                 <span className="inline-flex items-center gap-2">
                   <ShoppingBag className="h-4 w-4 text-brand" strokeWidth={1.75} aria-hidden="true" />
                   Order summary
-                  <span className="font-normal text-ink-2">
+                  <span suppressHydrationWarning className="font-normal text-ink-2">
                     · {cartItems.length} {cartItems.length === 1 ? "item" : "items"}
                   </span>
                 </span>
-                <span className="inline-flex items-center gap-1.5 tabular-nums">
+                <span suppressHydrationWarning className="inline-flex items-center gap-1.5 tabular-nums">
                   {formatINR(subtotal)}
                   <ChevronDown className="chev h-4 w-4 text-ink-3 transition-transform" strokeWidth={1.75} aria-hidden="true" />
                 </span>

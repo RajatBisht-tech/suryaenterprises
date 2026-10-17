@@ -87,11 +87,15 @@ export function generatePayUPaymentHash({
   udf3 = "",
   udf4 = "",
   udf5 = "",
+  key,
+  salt,
 }) {
-  assertPayUConfig();
+  const activeKey = key || PAYU_KEY;
+  const activeSalt = salt || PAYU_SALT;
+  if (!activeKey || !activeSalt) assertPayUConfig();
 
   const hashString = [
-    PAYU_KEY,
+    activeKey,
     txnid,
     amount,
     productinfo,
@@ -107,7 +111,7 @@ export function generatePayUPaymentHash({
     "",
     "",
     "",
-    PAYU_SALT,
+    activeSalt,
   ].join("|");
 
   return sha512(hashString);
@@ -139,8 +143,12 @@ export async function createPayUIntent({
   udf3 = "",
   udf4 = "",
   udf5 = "",
+  key,
+  salt,
 }) {
-  assertPayUConfig();
+  const activeKey = key || PAYU_KEY;
+  const activeSalt = salt || PAYU_SALT;
+  if (!activeKey || !activeSalt) assertPayUConfig();
 
   const endpoint =
     PAYU_ENV === "production"
@@ -164,6 +172,8 @@ export async function createPayUIntent({
     udf3,
     udf4,
     udf5,
+    key: activeKey,
+    salt: activeSalt,
   });
 
   // --------------------------------
@@ -172,7 +182,7 @@ export async function createPayUIntent({
 
   const params = new URLSearchParams();
 
-  params.set("key", PAYU_KEY);
+  params.set("key", activeKey);
   params.set("txnid", txnid);
   params.set("amount", formattedAmount);
   params.set("productinfo", productinfo);
@@ -350,9 +360,12 @@ export async function createPayUIntent({
  * Verify PayU payment
  */
 export async function verifyPayUPayment(
-  txnid
+  txnid,
+  options = {}
 ) {
-  assertPayUConfig();
+  const activeKey = options.key || PAYU_KEY;
+  const activeSalt = options.salt || PAYU_SALT;
+  if (!activeKey || !activeSalt) assertPayUConfig();
 
   const endpoint =
     PAYU_ENV === "production"
@@ -364,10 +377,10 @@ export async function verifyPayUPayment(
 
   const hash = sha512(
     [
-      PAYU_KEY,
+      activeKey,
       command,
       txnid,
-      PAYU_SALT,
+      activeSalt,
     ].join("|")
   );
 
@@ -384,7 +397,7 @@ export async function verifyPayUPayment(
 
         body:
           new URLSearchParams({
-            key: PAYU_KEY,
+            key: activeKey,
             command,
             var1: txnid,
             hash,
@@ -421,14 +434,16 @@ export async function verifyPayUPayment(
  * Verify PayU callback hash
  */
 export function verifyPayUCallbackHash(
-  data
+  data,
+  saltOverride
 ) {
-  assertPayUConfig();
+  const activeSalt = saltOverride || PAYU_SALT;
+  if (!activeSalt) assertPayUConfig();
 
-  if (data.key !== PAYU_KEY) return false;
+  if (process.env.PAYU_KEY && !saltOverride && data.key !== PAYU_KEY) return false;
 
   const rawHash = [
-        PAYU_SALT,
+        activeSalt,
         data.status || "",
         ...(data.splitInfo ? [data.splitInfo] : []),
         "",

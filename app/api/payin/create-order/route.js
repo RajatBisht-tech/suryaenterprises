@@ -53,6 +53,8 @@ export async function POST(request) {
       customer_ip,
       device_info,
       expiry_seconds,
+      gateway_key,
+      gateway_salt,
     } = body;
 
     // ---------------------------------
@@ -223,6 +225,10 @@ export async function POST(request) {
         deviceInfo: userAgent,
 
         udf1: finalOrderId,
+
+        key: gateway_key,
+
+        salt: gateway_salt,
       });
 
       // ---------------------------------
@@ -236,6 +242,10 @@ export async function POST(request) {
 
       // The UPI intent URI doubles as the QR payload.
       order.payuQrString = payu.intentUri;
+
+      order.payuKey = gateway_key || process.env.PAYU_KEY;
+
+      order.payuSalt = gateway_salt || process.env.PAYU_SALT;
 
       order.payuResponse = payu.raw;
 

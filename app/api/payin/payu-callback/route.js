@@ -48,13 +48,14 @@ export async function POST(request) {
     const params = new URLSearchParams(raw);
     const data = Object.fromEntries(params.entries());
 
-    if (!verifyPayUCallbackHash(data)) {
-      return NextResponse.json({ success: false, error: "Invalid PayU callback hash" }, { status: 400 });
-    }
-
     await connectDB();
     let order = await Order.findOne({ transactionId: data.txnid });
     if (!order) return NextResponse.json({ success: false, error: "Order not found" }, { status: 404 });
+
+    const activeSalt = order.payuSalt || process.env.PAYU_SALT;
+    if (!verifyPayUCallbackHash(data, activeSalt)) {
+      return NextResponse.json({ success: false, error: "Invalid PayU callback hash" }, { status: 400 });
+    }
 
     const expectedAmount = Number(order.subtotal || 0).toFixed(2);
     const receivedAmount = Number(data.amount || 0).toFixed(2);
@@ -64,7 +65,10 @@ export async function POST(request) {
 
     // The response hash does not cover bank references. Obtain authoritative
     // status and UTR from PayU rather than trusting callback-only fields.
-    const provider = await verifyPayUPayment(order.transactionId);
+    const provider = await verifyPayUPayment(order.transactionId, {
+      key: order.payuKey,
+      salt: order.payuSalt,
+    });
     const verified = verifiedPaymentUpdate(order, provider);
     const claimsSuccess = ["success", "captured", "paid", "completed"].includes(String(data.status || "").toLowerCase());
     if (!verified || (claimsSuccess && verified.paymentStatus !== "paid" && order.paymentStatus !== "paid")) {
