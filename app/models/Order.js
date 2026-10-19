@@ -27,8 +27,17 @@ const OrderSchema = new mongoose.Schema(
     paymentErrorCode: String,
     paymentErrorDetails: mongoose.Schema.Types.Mixed,
     redirectUrl: String,
+    gatewayKey: String,
+    gatewaySalt: String,
+    upiIntent: String,
+    upiString: String,
     razorpayOrderId: String,
     razorpayPaymentId: String,
+    razorpaySignature: String,
+    razorpayResponse: mongoose.Schema.Types.Mixed,
+    phonepeTransactionId: String,
+    phonepeMerchantId: String,
+    phonepeResponse: mongoose.Schema.Types.Mixed,
   },
   { timestamps: true }
 );

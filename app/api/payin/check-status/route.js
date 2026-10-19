@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { connectDB } from "../../../lib/mongodb";
 import Order from "../../../models/Order";
 import { verifyPayUPayment } from "../../../lib/payu";
+import { fetchRazorpayOrder, fetchRazorpayPayment } from "../../../lib/razorpay";
+import { checkPhonePeStatus } from "../../../lib/phonepe";
 import { refreshOrderPayment } from "../../../lib/paymentStatus";
 
 export const dynamic = "force-dynamic";
@@ -12,6 +14,23 @@ function bearer(request) {
 }
 
 function toResponse(order) {
+  const paymentId =
+    order.payuPaymentId ||
+    order.razorpayPaymentId ||
+    order.phonepeTransactionId ||
+    null;
+
+  const utr =
+    order.payuBankRefNum ||
+    order.razorpayPaymentId ||
+    order.phonepeTransactionId ||
+    null;
+
+  const deepLink =
+    order.upiIntent ||
+    order.payuQrString ||
+    null;
+
   return {
     status: "success",
     data: {
@@ -20,10 +39,12 @@ function toResponse(order) {
       payment_status: order.paymentStatus,
       amount: order.subtotal,
       currency: "INR",
-      payu_payment_id: order.payuPaymentId || null,
-      utr: order.payuBankRefNum || null,
-      deep_link: order.payuQrString || null,
-      qr_string: order.payuQrString || null,
+      provider: order.provider,
+      payment_id: paymentId,
+      payu_payment_id: paymentId,
+      utr,
+      deep_link: deepLink,
+      qr_string: deepLink,
     },
     error: null,
   };
@@ -39,21 +60,68 @@ export async function POST(request) {
     if (!order_id) return NextResponse.json({ status: "error", error: "order_id is required" }, { status: 400 });
 
     await connectDB();
-    let order = await Order.findOne({ orderId: String(order_id) });
+    let order = await Order.findOne({
+      $or: [{ orderId: String(order_id) }, { transactionId: String(order_id) }],
+    });
     if (!order) return NextResponse.json({ status: "error", error: "Order not found" }, { status: 404 });
 
-    if (order.transactionId && (order.paymentStatus !== "paid" || !order.payuBankRefNum)) {
+    const providerType = String(order.provider || "payu").toLowerCase();
+
+    // 1. Razorpay verification
+    if (providerType === "razorpay" && order.paymentStatus !== "paid") {
+      try {
+        const key = order.gatewayKey || process.env.RAZORPAY_KEY;
+        const salt = order.gatewaySalt || process.env.RAZORPAY_SECRET;
+        if (key && salt && order.razorpayOrderId) {
+          const rzpOrder = await fetchRazorpayOrder({ key, salt, orderId: order.razorpayOrderId });
+          if (rzpOrder?.isPaid) {
+            order.paymentStatus = "paid";
+            order.paidAt = new Date();
+            await order.save();
+          }
+        }
+      } catch (err) {
+        console.error("Razorpay verification unavailable:", err.name);
+      }
+    }
+    // 2. PhonePe verification
+    else if (providerType === "phonepe" && order.paymentStatus !== "paid") {
+      try {
+        const merchantId = order.phonepeMerchantId || order.gatewayKey || process.env.PHONEPE_MERCHANT_ID;
+        const saltKey = order.gatewaySalt || process.env.PHONEPE_SALT_KEY;
+        if (merchantId && saltKey && order.transactionId) {
+          const phonepeRes = await checkPhonePeStatus({
+            merchantId,
+            merchantTransactionId: order.transactionId,
+            saltKey,
+            isProduction: String(process.env.PHONEPE_ENV || "").toLowerCase() === "production",
+          });
+          if (phonepeRes?.isPaid) {
+            order.paymentStatus = "paid";
+            order.paidAt = new Date();
+            if (phonepeRes.utr) order.phonepeTransactionId = phonepeRes.utr;
+            await order.save();
+          } else if (phonepeRes?.isFailed) {
+            order.paymentStatus = "failed";
+            await order.save();
+          }
+        }
+      } catch (err) {
+        console.error("PhonePe verification unavailable:", err.name);
+      }
+    }
+    // 3. PayU verification
+    else if (order.transactionId && (order.paymentStatus !== "paid" || !order.payuBankRefNum)) {
       try {
         order = await refreshOrderPayment(order, { verify: verifyPayUPayment, model: Order });
       } catch (error) {
-        // An unavailable provider never turns a pending payment into success/failure.
         console.error("PayU verification unavailable:", error.name);
       }
     }
 
     return NextResponse.json(toResponse(order));
   } catch (error) {
-    console.error("PayU check-status error:", error);
+    console.error("Check-status error:", error);
     return NextResponse.json({ status: "error", error: "Unable to check payment status" }, { status: 500 });
   }
 }

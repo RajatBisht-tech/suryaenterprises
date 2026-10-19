@@ -3,6 +3,8 @@ import crypto from "node:crypto";
 import { connectDB } from "../../../lib/mongodb";
 import Order from "../../../models/Order";
 import { createPayUIntent } from "../../../lib/payu";
+import { createRazorpayIntent } from "../../../lib/razorpay";
+import { createPhonePeIntent } from "../../../lib/phonepe";
 import { enqueuePaymentRecovery } from "../../../lib/paymentRecoveryQueue";
 import { prepareStorefrontPurchase } from "../../../lib/checkoutOrder.mjs";
 import catalog from "../../../products/data/products.json";
@@ -53,8 +55,10 @@ export async function POST(request) {
       customer_ip,
       device_info,
       expiry_seconds,
+      provider = "payu",
       gateway_key,
       gateway_salt,
+      merchant_vpa,
     } = body;
 
     // ---------------------------------
@@ -167,17 +171,23 @@ export async function POST(request) {
 
       paymentStatus: "pending",
 
-      paymentMethod: "payu_dynamic_qr",
+      paymentMethod: `${String(provider || "payu").toLowerCase().trim()}_dynamic_qr`,
 
-      provider: "payu",
+      provider: String(provider || "payu").toLowerCase().trim(),
+
+      gatewayKey: gateway_key || null,
+
+      gatewaySalt: gateway_salt || null,
 
       // IMPORTANT:
       // No redirectUrl for internal Surya checkout.
       redirectUrl: null,
     });
 
+    const reqProvider = String(provider || "payu").toLowerCase().trim();
+
     // ---------------------------------
-    // 11. Create PayU Dynamic QR
+    // 11. Create Gateway Payment
     // ---------------------------------
     try {
       const clientIp =
@@ -199,114 +209,134 @@ export async function POST(request) {
           ? Number(expiry_seconds)
           : 1800;
 
-      const payu = await createPayUIntent({
-        txnid: transactionId,
+      let paymentResult = null;
 
-        amount: numericAmount,
+      if (reqProvider === "razorpay") {
+        const rzp = await createRazorpayIntent({
+          key: gateway_key || process.env.RAZORPAY_KEY,
+          salt: gateway_salt || process.env.RAZORPAY_SECRET,
+          amount: numericAmount,
+          transactionId,
+          orderId: finalOrderId,
+          name: `${firstName} ${lastName}`.trim(),
+          email: customerEmail,
+          mobile: customerMobile,
+          merchantVpa: merchant_vpa,
+          notes: { productinfo: String(productinfo || "Surya Enterprise Purchase") },
+        });
 
-        productinfo:
-          String(
-            productinfo ||
-            "Surya Enterprise Payment"
-          ),
+        order.razorpayOrderId = rzp.orderId;
+        order.razorpayPaymentId = rzp.paymentId;
+        order.upiIntent = rzp.intentUri;
+        order.upiString = rzp.intentUri;
+        order.gatewayKey = gateway_key || process.env.RAZORPAY_KEY;
+        order.gatewaySalt = gateway_salt || process.env.RAZORPAY_SECRET;
+        order.razorpayResponse = rzp.raw;
+        await order.save();
 
-        firstname: firstName,
+        paymentResult = {
+          paymentId: rzp.orderId,
+          merchantVpa: rzp.merchantVpa,
+          merchantName: rzp.merchantName,
+          deepLink: rzp.intentUri,
+          intentData: rzp.checkoutUrl,
+        };
+      } else if (reqProvider === "phonepe") {
+        const phonepe = await createPhonePeIntent({
+          merchantId: gateway_key || process.env.PHONEPE_MERCHANT_ID,
+          saltKey: gateway_salt || process.env.PHONEPE_SALT_KEY,
+          saltIndex: 1,
+          amount: numericAmount,
+          transactionId,
+          customerPhone: customerMobile,
+          redirectUrl: `${baseUrl}/checkout/receipt?txnId=${transactionId}`,
+          callbackUrl: `${baseUrl}/api/payin/phonepe-callback`,
+          merchantVpa: merchant_vpa,
+          isProduction: String(process.env.PHONEPE_ENV || "").toLowerCase() === "production",
+        });
 
-        email: customerEmail,
+        order.phonepeTransactionId = phonepe.paymentId;
+        order.phonepeMerchantId = gateway_key || process.env.PHONEPE_MERCHANT_ID;
+        order.upiIntent = phonepe.intentUri;
+        order.upiString = phonepe.intentUri;
+        order.gatewayKey = gateway_key || process.env.PHONEPE_MERCHANT_ID;
+        order.gatewaySalt = gateway_salt || process.env.PHONEPE_SALT_KEY;
+        order.phonepeResponse = phonepe.raw;
+        await order.save();
 
-        phone: customerMobile,
+        paymentResult = {
+          paymentId: phonepe.paymentId,
+          merchantVpa: phonepe.merchantVpa,
+          merchantName: phonepe.merchantName,
+          deepLink: phonepe.intentUri,
+          intentData: phonepe.checkoutUrl,
+        };
+      } else {
+        // Default: PayU
+        const payu = await createPayUIntent({
+          txnid: transactionId,
+          amount: numericAmount,
+          productinfo: String(productinfo || "Surya Enterprise Payment"),
+          firstname: firstName,
+          email: customerEmail,
+          phone: customerMobile,
+          successUrl: callbackUrl,
+          failureUrl: callbackUrl,
+          clientIp,
+          deviceInfo: userAgent,
+          udf1: finalOrderId,
+          key: gateway_key,
+          salt: gateway_salt,
+        });
 
-        successUrl: callbackUrl,
+        order.payuTxnId = payu.txnId;
+        order.payuPaymentId = payu.paymentId;
+        order.payuMerchantVpa = payu.merchantVpa;
+        order.payuQrString = payu.intentUri;
+        order.upiIntent = payu.intentUri;
+        order.payuKey = gateway_key || process.env.PAYU_KEY;
+        order.payuSalt = gateway_salt || process.env.PAYU_SALT;
+        order.payuResponse = payu.raw;
+        await order.save();
 
-        failureUrl: callbackUrl,
-
-        clientIp,
-
-        deviceInfo: userAgent,
-
-        udf1: finalOrderId,
-
-        key: gateway_key,
-
-        salt: gateway_salt,
-      });
-
-      // ---------------------------------
-      // 12. Save PayU response
-      // ---------------------------------
-      order.payuTxnId = payu.txnId;
-
-      order.payuPaymentId = payu.paymentId;
-
-      order.payuMerchantVpa = payu.merchantVpa;
-
-      // The UPI intent URI doubles as the QR payload.
-      order.payuQrString = payu.intentUri;
-
-      order.payuKey = gateway_key || process.env.PAYU_KEY;
-
-      order.payuSalt = gateway_salt || process.env.PAYU_SALT;
-
-      order.payuResponse = payu.raw;
-
-      await order.save();
+        paymentResult = {
+          paymentId: payu.paymentId,
+          merchantVpa: payu.merchantVpa,
+          merchantName: payu.merchantName,
+          deepLink: payu.intentUri,
+          intentData: payu.intentURIData,
+        };
+      }
 
       // Start independent verification while the customer uses the UPI app.
-      // Queue outages must never turn a successfully created UPI into FAILED.
       await enqueuePaymentRecovery(finalOrderId);
 
       // ---------------------------------
-      // 13. Return QR to checkout
+      // 13. Return Unified Payload
       // ---------------------------------
       return NextResponse.json({
         status: "success",
-
         data: {
           transaction_id: transactionId,
-
           order_id: finalOrderId,
-
-          amount: Number(
-            numericAmount.toFixed(2)
-          ),
-
+          amount: Number(numericAmount.toFixed(2)),
           currency: "INR",
-
           payment_status: "pending",
-
-          payment_id:
-            payu.paymentId,
-
-          merchant_vpa:
-            payu.merchantVpa,
-
-          merchant_name:
-            payu.merchantName,
-
-          // IMPORTANT: the UPI deep link. Also exposed as qr_string /
-          // upi_intent because a UPI intent URI is a valid QR payload.
-          deep_link:
-            payu.intentUri,
-
-          upi_intent:
-            payu.intentUri,
-
-          qr_string:
-            payu.intentUri,
-
-          // Optional
-          intent_data:
-            payu.intentURIData,
-
-          expires_in:
-            expiry,
+          provider: reqProvider,
+          payment_id: paymentResult.paymentId,
+          merchant_vpa: paymentResult.merchantVpa,
+          merchant_name: paymentResult.merchantName,
+          deep_link: paymentResult.deepLink,
+          upi_intent: paymentResult.deepLink,
+          qr_string: paymentResult.deepLink,
+          intent_data: paymentResult.intentData,
+          expires_in: expiry,
         },
-
         error: null,
       });
-    } catch (payuError) {
+    } catch (providerError) {
       // ---------------------------------
-      // 14. PayU failed
+      // 14. Provider failed
       // ---------------------------------
       await Order.updateOne(
         { _id: order._id },
@@ -314,15 +344,17 @@ export async function POST(request) {
           $set: {
             paymentStatus: "failed",
             paymentError:
-              payuError.message ||
-              "PayU payment creation failed",
-            paymentErrorCode: payuError.providerDiagnostics ? payuError.code : null,
-            paymentErrorDetails: payuError.providerDiagnostics || null,
+              providerError.message ||
+              `${reqProvider.toUpperCase()} payment creation failed`,
+            paymentErrorCode: providerError.providerDiagnostics
+              ? providerError.code
+              : (providerError.statusCode ? `HTTP_${providerError.statusCode}` : null),
+            paymentErrorDetails: providerError.providerDiagnostics || providerError.providerResponse || null,
           },
         }
       );
 
-      throw payuError;
+      throw providerError;
     }
   } catch (error) {
     console.error(

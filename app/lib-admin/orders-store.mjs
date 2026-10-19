@@ -4,8 +4,7 @@ import { maskMobile, maskMobileReferences } from "./mobile.mjs";
 
 const { ObjectId } = mongoose.Types;
 
-const SUCCESS = { paymentStatus: "paid", provider: { $in: ["payu", "PAYU"] },
-  payuPaymentId: { $type: "string", $nin: ["", "Not Found"] }, subtotal: { $gt: 0, $lt: Number.MAX_SAFE_INTEGER / 100 } };
+const SUCCESS = { paymentStatus: "paid", subtotal: { $gt: 0, $lt: Number.MAX_SAFE_INTEGER / 100 } };
 const regex = text => text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 const iso = value => value ? new Date(value).toISOString() : null;
 const idFor = value => {
@@ -32,12 +31,12 @@ export function createOrdersStore(db, gatewayDb, products, { now = () => new Dat
   const metadata = async rows => new Map((await operations.find({ _id: { $in: rows.map(r => String(r._id)) } }).toArray()).map(r => [r._id, r]));
   const gatewayRows = async rows => {
     if (!gatewayDb || !rows.length) return new Map();
-    const txns = await gatewayDb.collection("transactions").find({ transactionId: { $in: rows.map(r => r.orderId) }, provider: "PAYU" },
-      { projection: { transactionId: 1, orderId: 1, payuTxnId: 1, payuId: 1, status: 1, amount: 1, paidAt: 1, callbackStatus: 1 } }).toArray();
+    const txns = await gatewayDb.collection("transactions").find({ transactionId: { $in: rows.map(r => r.orderId) } },
+      { projection: { transactionId: 1, orderId: 1, payuTxnId: 1, payuId: 1, razorpayOrderId: 1, razorpayPaymentId: 1, phonepeTransactionId: 1, status: 1, amount: 1, paidAt: 1, callbackStatus: 1 } }).toArray();
     // Never attach a different payment merely because its amount matches.
     const source = new Map(rows.map(r => [r.orderId, r]));
     return new Map(txns.filter(t => { const r = source.get(t.transactionId);
-      return r && Math.round(r.subtotal * 100) === Math.round(t.amount * 100) && (!t.payuId || t.payuId === r.payuPaymentId);
+      return r && Math.round(r.subtotal * 100) === Math.round(t.amount * 100);
     }).map(t => [t.transactionId, t]));
   };
   const toRow = (order, ops, gateway, detail = false) => {
@@ -49,7 +48,9 @@ export function createOrdersStore(db, gatewayDb, products, { now = () => new Dat
     const paidAt = order.paidAt || order.__paidAt || order.updatedAt || order.createdAt;
     const row = {
       id: String(order._id), orderId: order.orderId, externalOrderId: gateway?.orderId || null,
-      transactionId: order.transactionId || order.payuTxnId || null, paymentId: order.payuPaymentId, utr: order.payuBankRefNum || null,
+      transactionId: order.transactionId || order.payuTxnId || order.razorpayOrderId || order.phonepeTransactionId || null,
+      paymentId: order.payuPaymentId || order.razorpayPaymentId || order.phonepeTransactionId || order.transactionId || order.orderId,
+      utr: order.payuBankRefNum || order.utr || order.rrn || null,
       amount: order.subtotal, currency: "INR", paymentStatus: "paid", paidAt: iso(paidAt), createdAt: iso(order.createdAt),
       dateBasis: order.paidAt ? "payment_confirmed" : "record_updated", providerPaidAt: iso(gateway?.paidAt),
       source: gateway ? "gateway" : "storefront", gatewayStatus: gateway?.status || null, callbackStatus: gateway?.callbackStatus || null,
@@ -62,7 +63,7 @@ export function createOrdersStore(db, gatewayDb, products, { now = () => new Dat
       fulfillmentStatus: ops?.fulfillmentStatus || (purchased ? "processing" : "unassigned"), shipment: ops?.shipment || {},
       notes: ops?.notes || "", revision: ops?.revision || 0,
     };
-    if (detail) row.history = [{ at: iso(paidAt), action: "payment_recorded", note: "Successful PayU payment in MongoDB." }, ...(ops?.history || []).map(h => ({ ...h, at: iso(h.at),
+    if (detail) row.history = [{ at: iso(paidAt), action: "payment_recorded", note: `Successful ${order.provider ? order.provider.toUpperCase() : "payment"} recorded.` }, ...(ops?.history || []).map(h => ({ ...h, at: iso(h.at),
       ...(h.phone !== undefined ? { phone: maskMobile(h.phone) } : {}), ...(h.previousPhone !== undefined ? { previousPhone: maskMobile(h.previousPhone) } : {}) }))];
     return row;
   };
@@ -74,10 +75,10 @@ export function createOrdersStore(db, gatewayDb, products, { now = () => new Dat
     const match = { ...SUCCESS };
     if (filters.q) {
       const pattern = new RegExp(regex(filters.q), "i");
-      const external = gatewayDb ? await gatewayDb.collection("transactions").find({ provider: "PAYU", status: "SUCCESS", orderId: pattern },
+      const external = gatewayDb ? await gatewayDb.collection("transactions").find({ status: "SUCCESS", orderId: pattern },
         { projection: { transactionId: 1 } }).limit(1001).toArray() : [];
       if (external.length > 1000) throw new AdminError("Refine the search to match fewer merchant order IDs.");
-      match.$or = ["orderId", "transactionId", "payuTxnId", "payuPaymentId", "payuBankRefNum", "customer.firstName", "customer.lastName", "customer.email", "customer.phone"].map(field => ({ [field]: pattern }));
+      match.$or = ["orderId", "transactionId", "payuTxnId", "payuPaymentId", "razorpayOrderId", "razorpayPaymentId", "phonepeTransactionId", "payuBankRefNum", "customer.firstName", "customer.lastName", "customer.email", "customer.phone"].map(field => ({ [field]: pattern }));
       match.$or.push({ $expr: { $regexMatch: { input: { $concat: [{ $ifNull: ["$customer.firstName", ""] }, " ", { $ifNull: ["$customer.lastName", ""] }] }, regex: regex(filters.q), options: "i" } } });
       if (external.length) match.$or.push({ orderId: { $in: external.map(t => t.transactionId) } });
       const correctedPhones = await operations.find({ customerPhone: pattern }, { projection: { _id: 1 } }).limit(1001).toArray();
@@ -121,7 +122,7 @@ export function createOrdersStore(db, gatewayDb, products, { now = () => new Dat
   };
   const detail = async id => {
     const order = await orders.findOne({ ...SUCCESS, _id: idFor(id) }, { projection: { payuResponse: 0, payuQrString: 0 } });
-    if (!order) throw new AdminError("Successful PayU order not found.", 404);
+    if (!order) throw new AdminError("Successful order not found.", 404);
     return (await enrich([order], true))[0];
   };
   const update = async (id, body) => {
