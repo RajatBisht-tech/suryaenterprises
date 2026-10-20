@@ -63,6 +63,7 @@ export async function POST(request) {
     const orderEntity = bodyData?.payload?.order?.entity;
     const rzpOrderId =
       orderEntity?.id ||
+      paymentEntity?.order_id ||
       bodyData?.razorpay_order_id ||
       bodyData?.order_id;
     const rzpPaymentId =
@@ -121,6 +122,12 @@ export async function POST(request) {
     order.paidAt = new Date();
     if (rzpPaymentId) order.razorpayPaymentId = rzpPaymentId;
     if (signature) order.razorpaySignature = signature;
+    const utr =
+      paymentEntity?.acquirer_data?.rrn ||
+      paymentEntity?.acquirer_data?.bank_transaction_id ||
+      paymentEntity?.acquirer_data?.upi_transaction_id ||
+      rzpPaymentId;
+    if (utr) order.payuBankRefNum = utr;
     order.razorpayResponse = bodyData;
     await order.save();
 
