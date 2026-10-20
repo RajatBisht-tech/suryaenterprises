@@ -73,9 +73,14 @@ export async function createRazorpayIntent({
   }
 
   const checkoutUrl = `https://api.razorpay.com/v1/checkout/hosted?order_id=${data.id}`;
-  const upiDeepLink = merchantVpa
-    ? `upi://pay?pa=${merchantVpa}&pn=Surya%20Enterprises&am=${numericAmount.toFixed(2)}&cu=INR&tr=${transactionId}`
-    : checkoutUrl;
+  const activeVpa =
+    merchantVpa ||
+    process.env.RAZORPAY_MERCHANT_VPA ||
+    "suryaenterprise391259.rzp@rxairtel";
+
+  // Use Razorpay order ID (data.id) as the 'tr' parameter so the sponsor bank (@rxairtel)
+  // and NPCI UPI switch can resolve and accept the payment. tn carries the internal transactionId.
+  const upiDeepLink = `upi://pay?pa=${activeVpa}&pn=Surya%20Enterprises&am=${numericAmount.toFixed(2)}&cu=INR&tr=${data.id}&tn=${encodeURIComponent(String(transactionId || ""))}`;
 
   return {
     orderId: data.id,
@@ -83,7 +88,7 @@ export async function createRazorpayIntent({
     txnId: transactionId,
     intentUri: upiDeepLink,
     checkoutUrl,
-    merchantVpa: merchantVpa || null,
+    merchantVpa: activeVpa,
     merchantName: "Surya Enterprises",
     raw: data,
   };
@@ -185,6 +190,34 @@ export async function fetchRazorpayPayment({ key, salt, paymentId }) {
       utr: data.acquirer_data?.rrn || data.acquirer_data?.bank_transaction_id || data.acquirer_data?.upi_transaction_id || paymentId,
       method: data.method,
       amount: data.amount ? data.amount / 100 : null,
+      raw: data,
+    };
+  } catch (_) {
+    return null;
+  }
+}
+
+/**
+ * Fetches all payment attempts and captured UTRs for a Razorpay Order
+ */
+export async function fetchRazorpayOrderPayments({ key, salt, orderId }) {
+  if (!key || !salt || !orderId) return null;
+  const authHeader = `Basic ${Buffer.from(`${key}:${salt}`).toString("base64")}`;
+
+  try {
+    const res = await fetch(`${RAZORPAY_API_BASE}/orders/${orderId}/payments`, {
+      method: "GET",
+      headers: {
+        Authorization: authHeader,
+        Accept: "application/json",
+      },
+    });
+
+    if (!res.ok) return null;
+    const data = await res.json();
+    return {
+      count: data.count || (Array.isArray(data.items) ? data.items.length : 0),
+      items: Array.isArray(data.items) ? data.items : [],
       raw: data,
     };
   } catch (_) {

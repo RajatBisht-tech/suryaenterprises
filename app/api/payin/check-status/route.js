@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { connectDB } from "../../../lib/mongodb";
 import Order from "../../../models/Order";
 import { verifyPayUPayment } from "../../../lib/payu";
-import { fetchRazorpayOrder, fetchRazorpayPayment } from "../../../lib/razorpay";
+import { fetchRazorpayOrder, fetchRazorpayPayment, fetchRazorpayOrderPayments } from "../../../lib/razorpay";
 import { checkPhonePeStatus } from "../../../lib/phonepe";
 import { refreshOrderPayment } from "../../../lib/paymentStatus";
 
@@ -77,6 +77,19 @@ export async function POST(request) {
           if (rzpOrder?.isPaid) {
             order.paymentStatus = "paid";
             order.paidAt = new Date();
+            try {
+              const payments = await fetchRazorpayOrderPayments({ key, salt, orderId: order.razorpayOrderId });
+              if (payments?.items?.length > 0) {
+                const captured = payments.items.find((p) => p.status === "captured") || payments.items[0];
+                if (captured.id) order.razorpayPaymentId = captured.id;
+                const utr =
+                  captured.acquirer_data?.rrn ||
+                  captured.acquirer_data?.bank_transaction_id ||
+                  captured.acquirer_data?.upi_transaction_id ||
+                  captured.id;
+                if (utr) order.payuBankRefNum = utr;
+              }
+            } catch (_) {}
             await order.save();
           }
         }
