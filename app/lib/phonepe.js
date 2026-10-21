@@ -19,25 +19,82 @@ function decodeResponse(base64Str) {
   }
 }
 
-function getPhonePeBaseUrl(isProduction = false, merchantId = "") {
-  const isProdMid =
-    typeof merchantId === "string" &&
-    merchantId.startsWith("M") &&
-    !merchantId.toUpperCase().includes("UAT") &&
-    !merchantId.toUpperCase().includes("TEST");
+function isProdEnv(isProduction = false) {
+  if (isProduction) return true;
+  const envVal = String(process.env.PHONEPE_ENV || "").toLowerCase().trim();
+  return envVal === "production" || envVal === "prod" || envVal === "live";
+}
 
-  return isProduction || isProdMid
+function getPhonePeBaseUrl(isProduction = false) {
+  return isProdEnv(isProduction)
     ? "https://api.phonepe.com/apis/hermes"
     : "https://api-preprod.phonepe.com/apis/pg-sandbox";
 }
 
+// OAuth Token Cache for PhonePe PG V2 (Standard Checkout)
+let cachedOAuthToken = null;
+let cachedTokenExpiry = 0;
+
+async function getPhonePeOAuthToken({ clientId, clientSecret, clientVersion = 1, isProduction = false }) {
+  const now = Math.floor(Date.now() / 1000);
+  if (cachedOAuthToken && cachedTokenExpiry > now + 60) {
+    return cachedOAuthToken;
+  }
+
+  const tokenUrl = isProdEnv(isProduction)
+    ? "https://api.phonepe.com/apis/identity-manager/v1/oauth/token"
+    : "https://api-preprod.phonepe.com/apis/pg-sandbox/v1/oauth/token";
+
+  const body = new URLSearchParams({
+    client_id: clientId,
+    client_version: String(clientVersion || 1),
+    client_secret: clientSecret,
+    grant_type: "client_credentials",
+  });
+
+  const response = await fetch(tokenUrl, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/x-www-form-urlencoded",
+      Accept: "application/json",
+    },
+    body: body.toString(),
+    cache: "no-store",
+  });
+
+  const rawText = await response.text();
+  let data;
+  try {
+    data = JSON.parse(rawText);
+  } catch (_) {
+    throw new Error(`PhonePe OAuth returned non-JSON (HTTP ${response.status})`);
+  }
+
+  if (!response.ok || !data?.access_token) {
+    const errorMsg = data?.message || data?.error || `PhonePe OAuth failed (HTTP ${response.status})`;
+    throw new Error(errorMsg);
+  }
+
+  const tokenType = data.token_type || "O-Bearer";
+  cachedOAuthToken = `${tokenType} ${data.access_token}`;
+  cachedTokenExpiry = data.expires_at || (now + (data.expires_in || 3600));
+
+  return cachedOAuthToken;
+}
+
 /**
- * Creates PhonePe payment intent (Pay Page / UPI Intent)
+ * Creates PhonePe payment intent
+ * Supports both:
+ * 1) PhonePe Standard Checkout (V2 / OAuth) - modern client_id & client_secret
+ * 2) PhonePe Custom Integration (V1) - legacy merchant_id & salt_key
  */
 export async function createPhonePeIntent({
   merchantId,
   saltKey,
   saltIndex = 1,
+  clientId,
+  clientSecret,
+  clientVersion = 1,
   amount,
   transactionId,
   customerPhone = "9999999999",
@@ -45,10 +102,30 @@ export async function createPhonePeIntent({
   callbackUrl,
   merchantVpa,
   isProduction = false,
+  flow = "UPI_QR",
 }) {
-  if (!merchantId || !saltKey) {
-    throw new Error("PhonePe Merchant ID and Salt Key are required");
-  }
+  const activeClientId =
+    clientId ||
+    process.env.PHONEPE_CLIENT_ID ||
+    (merchantId && merchantId.includes("_") ? merchantId : null) ||
+    process.env.PHONEPE_MERCHANT_ID;
+
+  const activeClientSecret =
+    clientSecret ||
+    process.env.PHONEPE_CLIENT_SECRET ||
+    saltKey ||
+    process.env.PHONEPE_SALT_KEY;
+
+  const activeClientVersion =
+    clientVersion ||
+    process.env.PHONEPE_CLIENT_VERSION ||
+    saltIndex ||
+    1;
+
+  const activeMid = merchantId || process.env.PHONEPE_MERCHANT_ID;
+  const activeSalt = saltKey || process.env.PHONEPE_SALT_KEY;
+  const activeIndex = saltIndex || process.env.PHONEPE_SALT_INDEX || 1;
+  const activeIsProd = isProdEnv(isProduction);
 
   const numericAmount = Number(amount);
   if (!Number.isFinite(numericAmount) || numericAmount <= 0) {
@@ -57,8 +134,103 @@ export async function createPhonePeIntent({
 
   const amountInPaise = Math.round(numericAmount * 100);
 
-  const payload = {
-    merchantId,
+  // Check if credentials match V2 OAuth format (client_id with underscore or clientSecret configured)
+  const isV2 = Boolean(
+    (activeClientId && activeClientId.includes("_")) ||
+    process.env.PHONEPE_CLIENT_SECRET ||
+    (activeClientSecret && activeClientSecret.length >= 40 && !activeClientSecret.includes("-"))
+  );
+
+  if (isV2) {
+    try {
+      const authHeader = await getPhonePeOAuthToken({
+        clientId: activeClientId,
+        clientSecret: activeClientSecret,
+        clientVersion: activeClientVersion,
+        isProduction: activeIsProd,
+      });
+
+      const payUrl = activeIsProd
+        ? "https://api.phonepe.com/apis/pg/checkout/v2/pay"
+        : "https://api-preprod.phonepe.com/apis/pg-sandbox/checkout/v2/pay";
+
+      const payPayload = {
+        merchantOrderId: String(transactionId).slice(0, 63),
+        amount: amountInPaise,
+        expireAfter: 300,
+        paymentFlow: {
+          type: "PG_CHECKOUT",
+          message: "Surya Enterprises Payment",
+          merchantUrls: {
+            redirectUrl: redirectUrl || `https://www.suryaenter.in/checkout/receipt?txnId=${transactionId}`,
+          },
+          paymentModeConfig: {
+            version: "V2",
+            enabledPaymentModes: [
+              {
+                type: "UPI",
+              },
+            ],
+          },
+        },
+      };
+
+      const response = await fetch(payUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: authHeader,
+          Accept: "application/json",
+        },
+        body: JSON.stringify(payPayload),
+        cache: "no-store",
+      });
+
+      const rawText = await response.text();
+      let data;
+      try {
+        data = JSON.parse(rawText);
+      } catch (_) {
+        throw new Error(`PhonePe V2 returned non-JSON response (HTTP ${response.status})`);
+      }
+
+      if (!response.ok || (data.code && data.code !== "SUCCESS" && !data.redirectUrl)) {
+        const error = new Error(data.message || "PhonePe payment initiation failed");
+        error.statusCode = response.status;
+        error.providerResponse = data;
+        throw error;
+      }
+
+      const checkoutUrl = data.redirectUrl || null;
+      const upiDeepLink = merchantVpa
+        ? `upi://pay?pa=${merchantVpa}&pn=Surya%20Enterprises&am=${numericAmount.toFixed(2)}&cu=INR&tr=${transactionId}`
+        : checkoutUrl;
+
+      return {
+        paymentId: data.orderId || transactionId,
+        txnId: transactionId,
+        intentUri: upiDeepLink,
+        checkoutUrl,
+        merchantVpa: merchantVpa || null,
+        merchantName: "Surya Enterprises",
+        raw: data,
+      };
+    } catch (v2Err) {
+      if (!activeSalt || activeSalt === activeClientSecret) {
+        throw v2Err;
+      }
+      // If V2 fails and there's a separate V1 salt, fallback to V1 below
+      console.warn("PhonePe V2 failed, attempting V1 fallback:", v2Err.message);
+    }
+  }
+
+  // Fallback to PhonePe V1 Integration
+  if (!activeMid || !activeSalt) {
+    throw new Error("PhonePe Merchant ID and Salt Key are required");
+  }
+
+  const basePayload = {
+    merchantId: activeMid,
     merchantTransactionId: String(transactionId).slice(0, 36),
     merchantUserId: `U_${String(customerPhone).replace(/\D/g, "").slice(-10) || "GUEST"}`,
     amount: amountInPaise,
@@ -66,51 +238,86 @@ export async function createPhonePeIntent({
     redirectMode: "REDIRECT",
     callbackUrl: callbackUrl || `https://www.suryaenter.in/api/payin/phonepe-callback`,
     mobileNumber: String(customerPhone).replace(/\D/g, "").slice(-10) || "9999999999",
-    paymentInstrument: {
-      type: "PAY_PAGE",
-    },
   };
 
-  const base64Payload = encodePayload(payload);
+  const baseUrl = getPhonePeBaseUrl(activeIsProd);
   const endpoint = "/pg/v1/pay";
-  const xVerify = `${sha256(`${base64Payload}${endpoint}${saltKey}`)}###${saltIndex}`;
-
-  const baseUrl = getPhonePeBaseUrl(isProduction, merchantId);
   const targetUrl = `${baseUrl}${endpoint}`;
 
-  const response = await fetch(targetUrl, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "X-VERIFY": xVerify,
-      Accept: "application/json",
-    },
-    body: JSON.stringify({ request: base64Payload }),
-  });
+  async function executeRequest(instrumentType) {
+    const fullPayload = {
+      ...basePayload,
+      paymentInstrument: { type: instrumentType },
+    };
+    const base64Payload = encodePayload(fullPayload);
+    const xVerify = `${sha256(`${base64Payload}${endpoint}${activeSalt}`)}###${activeIndex}`;
 
-  const rawText = await response.text();
-  let data;
-  try {
-    data = JSON.parse(rawText);
-  } catch (_) {
-    throw new Error(`PhonePe returned non-JSON response (HTTP ${response.status})`);
+    const response = await fetch(targetUrl, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-VERIFY": xVerify,
+        Accept: "application/json",
+      },
+      body: JSON.stringify({ request: base64Payload }),
+      cache: "no-store",
+    });
+
+    const rawText = await response.text();
+    let data;
+    try {
+      data = JSON.parse(rawText);
+    } catch (_) {
+      throw new Error(`PhonePe returned non-JSON response (HTTP ${response.status})`);
+    }
+
+    return { response, data };
   }
 
-  if (!response.ok || !data?.success) {
-    const errorMsg = data?.message || `PhonePe payment initiation failed (HTTP ${response.status})`;
+  let data = null;
+  try {
+    const attempt1 = await executeRequest(flow || "UPI_QR");
+    if (attempt1.response.ok && attempt1.data?.success) {
+      data = attempt1.data;
+    } else if (flow !== "PAY_PAGE") {
+      const attempt2 = await executeRequest("PAY_PAGE");
+      if (attempt2.response.ok && attempt2.data?.success) {
+        data = attempt2.data;
+      } else {
+        data = attempt1.data || attempt2.data;
+      }
+    } else {
+      data = attempt1.data;
+    }
+  } catch (err) {
+    const attempt2 = await executeRequest("PAY_PAGE");
+    if (attempt2.response.ok && attempt2.data?.success) {
+      data = attempt2.data;
+    } else {
+      throw err;
+    }
+  }
+
+  if (!data?.success) {
+    const errorMsg = data?.message || "PhonePe payment initiation failed";
     const error = new Error(errorMsg);
-    error.statusCode = response.status;
+    error.statusCode = 400;
     error.providerResponse = data;
     throw error;
   }
 
-  const redirectInfo = data?.data?.instrumentResponse?.redirectInfo;
-  const intentUrl = data?.data?.instrumentResponse?.intentUrl;
-  const checkoutUrl = redirectInfo?.url || intentUrl || null;
+  const instrumentResp = data?.data?.instrumentResponse || {};
+  const qrData = instrumentResp.qrData || null;
+  const intentUrl = instrumentResp.intentUrl || null;
+  const redirectUrlResp = instrumentResp.redirectInfo?.url || null;
+  const checkoutUrl = redirectUrlResp || intentUrl || qrData || null;
 
-  const upiDeepLink = merchantVpa
-    ? `upi://pay?pa=${merchantVpa}&pn=Surya%20Enterprises&am=${numericAmount.toFixed(2)}&cu=INR&tr=${transactionId}`
-    : checkoutUrl;
+  const upiDeepLink =
+    qrData ||
+    intentUrl ||
+    (merchantVpa
+      ? `upi://pay?pa=${merchantVpa}&pn=Surya%20Enterprises&am=${numericAmount.toFixed(2)}&cu=INR&tr=${transactionId}`
+      : checkoutUrl);
 
   return {
     paymentId: data?.data?.merchantTransactionId || transactionId,
@@ -125,21 +332,103 @@ export async function createPhonePeIntent({
 
 /**
  * Checks PhonePe status via Server-to-Server status API
+ * Supports both PG V2 and PG V1
  */
 export async function checkPhonePeStatus({
   merchantId,
   merchantTransactionId,
   saltKey,
   saltIndex = 1,
+  clientId,
+  clientSecret,
+  clientVersion = 1,
   isProduction = false,
 }) {
-  if (!merchantId || !merchantTransactionId || !saltKey) {
+  const activeClientId =
+    clientId ||
+    process.env.PHONEPE_CLIENT_ID ||
+    (merchantId && merchantId.includes("_") ? merchantId : null) ||
+    process.env.PHONEPE_MERCHANT_ID;
+
+  const activeClientSecret =
+    clientSecret ||
+    process.env.PHONEPE_CLIENT_SECRET ||
+    saltKey ||
+    process.env.PHONEPE_SALT_KEY;
+
+  const activeClientVersion =
+    clientVersion ||
+    process.env.PHONEPE_CLIENT_VERSION ||
+    saltIndex ||
+    1;
+
+  const activeMid = merchantId || process.env.PHONEPE_MERCHANT_ID;
+  const activeSalt = saltKey || process.env.PHONEPE_SALT_KEY;
+  const activeIndex = saltIndex || process.env.PHONEPE_SALT_INDEX || 1;
+  const activeIsProd = isProdEnv(isProduction);
+
+  const isV2 = Boolean(
+    (activeClientId && activeClientId.includes("_")) ||
+    process.env.PHONEPE_CLIENT_SECRET ||
+    (activeClientSecret && activeClientSecret.length >= 40 && !activeClientSecret.includes("-"))
+  );
+
+  if (isV2) {
+    try {
+      const authHeader = await getPhonePeOAuthToken({
+        clientId: activeClientId,
+        clientSecret: activeClientSecret,
+        clientVersion: activeClientVersion,
+        isProduction: activeIsProd,
+      });
+
+      const statusUrl = activeIsProd
+        ? `https://api.phonepe.com/apis/pg/checkout/v2/order/${merchantTransactionId}/status`
+        : `https://api-preprod.phonepe.com/apis/pg-sandbox/checkout/v2/order/${merchantTransactionId}/status`;
+
+      const response = await fetch(statusUrl, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: authHeader,
+          Accept: "application/json",
+        },
+        cache: "no-store",
+      });
+
+      if (response.status === 204) {
+        return { success: false, state: "PENDING", isPaid: false, isFailed: false };
+      }
+
+      const data = await response.json();
+      const isCompleted = data?.state === "COMPLETED";
+      const isFailed = data?.state === "FAILED";
+      const payment = Array.isArray(data?.paymentDetails) ? data.paymentDetails[0] : null;
+      const utr = payment?.transactionId || payment?.utr || data?.orderId || null;
+
+      return {
+        success: isCompleted,
+        code: data?.state,
+        state: data?.state,
+        isPaid: isCompleted,
+        isFailed,
+        utr,
+        amount: data?.amount ? data.amount / 100 : null,
+        raw: data,
+      };
+    } catch (err) {
+      console.warn("PhonePe V2 status check error:", err.message);
+    }
+  }
+
+  // Fallback to V1 status check
+  if (!activeMid || !merchantTransactionId || !activeSalt) {
     throw new Error("merchantId, merchantTransactionId, and saltKey are required");
   }
 
-  const endpoint = `/pg/v1/status/${merchantId}/${merchantTransactionId}`;
-  const xVerify = `${sha256(`${endpoint}${saltKey}`)}###${saltIndex}`;
-  const baseUrl = getPhonePeBaseUrl(isProduction, merchantId);
+  const endpoint = `/pg/v1/status/${activeMid}/${merchantTransactionId}`;
+  const xVerify = `${sha256(`${endpoint}${activeSalt}`)}###${activeIndex}`;
+  const baseUrl = getPhonePeBaseUrl(activeIsProd);
   const targetUrl = `${baseUrl}${endpoint}`;
 
   try {
@@ -148,7 +437,7 @@ export async function checkPhonePeStatus({
       headers: {
         "Content-Type": "application/json",
         "X-VERIFY": xVerify,
-        "X-MERCHANT-ID": merchantId,
+        "X-MERCHANT-ID": activeMid,
         Accept: "application/json",
       },
     });
