@@ -107,7 +107,7 @@ export async function createPhonePeIntent({
   const activeClientId =
     clientId ||
     process.env.PHONEPE_CLIENT_ID ||
-    (merchantId && merchantId.includes("_") ? merchantId : null) ||
+    (merchantId && (merchantId.includes("_") || merchantId.startsWith("SU") || merchantId.length > 20) ? merchantId : null) ||
     process.env.PHONEPE_MERCHANT_ID;
 
   const activeClientSecret =
@@ -134,11 +134,12 @@ export async function createPhonePeIntent({
 
   const amountInPaise = Math.round(numericAmount * 100);
 
-  // Check if credentials match V2 OAuth format (client_id with underscore or clientSecret configured)
+  // Check if credentials match V2 OAuth format
   const isV2 = Boolean(
-    (activeClientId && activeClientId.includes("_")) ||
+    (activeClientId && (activeClientId.includes("_") || activeClientId.startsWith("SU") || activeClientId.length > 20)) ||
     process.env.PHONEPE_CLIENT_SECRET ||
-    (activeClientSecret && activeClientSecret.length >= 40 && !activeClientSecret.includes("-"))
+    process.env.PHONEPE_CLIENT_ID ||
+    (activeClientSecret && (activeClientSecret.length >= 32 || activeClientSecret.includes("-")))
   );
 
   if (isV2) {
@@ -347,7 +348,7 @@ export async function checkPhonePeStatus({
   const activeClientId =
     clientId ||
     process.env.PHONEPE_CLIENT_ID ||
-    (merchantId && merchantId.includes("_") ? merchantId : null) ||
+    (merchantId && (merchantId.includes("_") || merchantId.startsWith("SU") || merchantId.length > 20) ? merchantId : null) ||
     process.env.PHONEPE_MERCHANT_ID;
 
   const activeClientSecret =
@@ -368,9 +369,10 @@ export async function checkPhonePeStatus({
   const activeIsProd = isProdEnv(isProduction);
 
   const isV2 = Boolean(
-    (activeClientId && activeClientId.includes("_")) ||
+    (activeClientId && (activeClientId.includes("_") || activeClientId.startsWith("SU") || activeClientId.length > 20)) ||
     process.env.PHONEPE_CLIENT_SECRET ||
-    (activeClientSecret && activeClientSecret.length >= 40 && !activeClientSecret.includes("-"))
+    process.env.PHONEPE_CLIENT_ID ||
+    (activeClientSecret && (activeClientSecret.length >= 32 || activeClientSecret.includes("-")))
   );
 
   if (isV2) {
