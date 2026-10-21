@@ -114,10 +114,13 @@ export async function createRazorpayIntent({
   const resolvedVpa =
     (merchantVpa && String(merchantVpa).trim()) ||
     (process.env.RAZORPAY_MERCHANT_VPA && String(process.env.RAZORPAY_MERCHANT_VPA).trim()) ||
-    "suryaenterprise391259.rzp@rxairtel";
+    null;
 
   const activeVpa = resolvedVpa && String(resolvedVpa).trim() ? String(resolvedVpa).trim() : null;
 
+  // Only use raw UPI string if an authentic merchant VPA is explicitly provided.
+  // Otherwise, use Razorpay's official checkout URL (rzp.io) which generates
+  // a certified, live bank-authorized QR code.
   const upiDeepLink = activeVpa
     ? `upi://pay?pa=${activeVpa}&pn=Surya%20Enterprises&am=${numericAmount.toFixed(2)}&cu=INR&tr=${data.id}&tn=${encodeURIComponent(String(transactionId || orderId || "Order Payment"))}`
     : checkoutUrl;
