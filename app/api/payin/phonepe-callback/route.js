@@ -96,8 +96,13 @@ export async function POST(request) {
     }
 
     order.phonepeResponse = decoded;
-    if (decoded.data?.transactionId) {
-      order.phonepeTransactionId = decoded.data.transactionId;
+    const utr =
+      decoded.data?.paymentInstrument?.utr ||
+      decoded.data?.paymentInstrument?.bankTransactionId ||
+      decoded.data?.transactionId;
+    if (utr) {
+      order.phonepeTransactionId = utr;
+      order.payuBankRefNum = utr;
     }
     await order.save();
 

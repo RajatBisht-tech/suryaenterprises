@@ -111,7 +111,10 @@ export async function POST(request) {
           if (phonepeRes?.isPaid) {
             order.paymentStatus = "paid";
             order.paidAt = new Date();
-            if (phonepeRes.utr) order.phonepeTransactionId = phonepeRes.utr;
+            if (phonepeRes.utr) {
+              order.phonepeTransactionId = phonepeRes.utr;
+              order.payuBankRefNum = phonepeRes.utr;
+            }
             await order.save();
           } else if (phonepeRes?.isFailed) {
             order.paymentStatus = "failed";
