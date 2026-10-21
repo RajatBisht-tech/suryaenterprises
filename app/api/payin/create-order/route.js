@@ -249,7 +249,7 @@ export async function POST(request) {
           amount: numericAmount,
           transactionId,
           customerPhone: customerMobile,
-          redirectUrl: `${baseUrl}/checkout/receipt?txnId=${transactionId}`,
+          redirectUrl: `${baseUrl}/pay/${transactionId}`,
           callbackUrl: `${baseUrl}/api/payin/phonepe-callback`,
           merchantVpa: merchant_vpa,
           isProduction: String(process.env.PHONEPE_ENV || "").toLowerCase() === "production",

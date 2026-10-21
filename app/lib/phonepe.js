@@ -163,7 +163,7 @@ export async function createPhonePeIntent({
           type: "PG_CHECKOUT",
           message: "Surya Enterprises Payment",
           merchantUrls: {
-            redirectUrl: redirectUrl || `https://www.suryaenter.in/checkout/receipt?txnId=${transactionId}`,
+            redirectUrl: redirectUrl || `https://www.suryaenter.in/pay/${transactionId}`,
           },
           paymentModeConfig: {
             version: "V2",
@@ -203,8 +203,13 @@ export async function createPhonePeIntent({
       }
 
       const checkoutUrl = data.redirectUrl || null;
-      const upiDeepLink = merchantVpa
-        ? `upi://pay?pa=${merchantVpa}&pn=Surya%20Enterprises&am=${numericAmount.toFixed(2)}&cu=INR&tr=${transactionId}`
+      const resolvedVpa =
+        (merchantVpa && String(merchantVpa).trim()) ||
+        (process.env.PHONEPE_MERCHANT_VPA && String(process.env.PHONEPE_MERCHANT_VPA).trim()) ||
+        null;
+
+      const upiDeepLink = resolvedVpa
+        ? `upi://pay?pa=${resolvedVpa}&pn=Surya%20Enterprises&am=${numericAmount.toFixed(2)}&cu=INR&tr=${transactionId}`
         : checkoutUrl;
 
       return {
@@ -212,7 +217,7 @@ export async function createPhonePeIntent({
         txnId: transactionId,
         intentUri: upiDeepLink,
         checkoutUrl,
-        merchantVpa: merchantVpa || null,
+        merchantVpa: resolvedVpa,
         merchantName: "Surya Enterprises",
         raw: data,
       };
