@@ -73,23 +73,22 @@ export async function POST(request) {
         const key = order.gatewayKey || process.env.RAZORPAY_KEY;
         const salt = order.gatewaySalt || process.env.RAZORPAY_SECRET;
         if (key && salt && order.razorpayOrderId) {
-          const rzpOrder = await fetchRazorpayOrder({ key, salt, orderId: order.razorpayOrderId });
-          if (rzpOrder?.isPaid) {
+          const [rzpOrder, payments] = await Promise.all([
+            fetchRazorpayOrder({ key, salt, orderId: order.razorpayOrderId }).catch(() => null),
+            fetchRazorpayOrderPayments({ key, salt, orderId: order.razorpayOrderId }).catch(() => null),
+          ]);
+          const captured = payments?.items?.find((p) => p.status === "captured");
+          if (rzpOrder?.isPaid || captured) {
             order.paymentStatus = "paid";
             order.paidAt = new Date();
-            try {
-              const payments = await fetchRazorpayOrderPayments({ key, salt, orderId: order.razorpayOrderId });
-              if (payments?.items?.length > 0) {
-                const captured = payments.items.find((p) => p.status === "captured") || payments.items[0];
-                if (captured.id) order.razorpayPaymentId = captured.id;
-                const utr =
-                  captured.acquirer_data?.rrn ||
-                  captured.acquirer_data?.bank_transaction_id ||
-                  captured.acquirer_data?.upi_transaction_id ||
-                  captured.id;
-                if (utr) order.payuBankRefNum = utr;
-              }
-            } catch (_) {}
+            const payItem = captured || payments?.items?.[0];
+            if (payItem?.id) order.razorpayPaymentId = payItem.id;
+            const utr =
+              payItem?.acquirer_data?.rrn ||
+              payItem?.acquirer_data?.bank_transaction_id ||
+              payItem?.acquirer_data?.upi_transaction_id ||
+              payItem?.id;
+            if (utr) order.payuBankRefNum = utr;
             await order.save();
           }
         }

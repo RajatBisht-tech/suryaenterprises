@@ -72,19 +72,59 @@ export async function createRazorpayIntent({
     throw error;
   }
 
-  const checkoutUrl = `https://api.razorpay.com/v1/checkout/hosted?order_id=${data.id}`;
-  const activeVpa =
-    merchantVpa ||
-    process.env.RAZORPAY_MERCHANT_VPA ||
-    "suryaenterprise391259.rzp@rxairtel";
+  let checkoutUrl = `https://api.razorpay.com/v1/checkout/hosted?order_id=${data.id}`;
+  let paymentLinkId = null;
+  const isLive = String(key).startsWith("rzp_live");
 
-  // Use Razorpay order ID (data.id) as the 'tr' parameter so the sponsor bank (@rxairtel)
-  // and NPCI UPI switch can resolve and accept the payment. tn carries the internal transactionId.
-  const upiDeepLink = `upi://pay?pa=${activeVpa}&pn=Surya%20Enterprises&am=${numericAmount.toFixed(2)}&cu=INR&tr=${data.id}&tn=${encodeURIComponent(String(transactionId || ""))}`;
+  try {
+    const plinkRes = await fetch(`${RAZORPAY_API_BASE}/payment_links`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: authHeader,
+        Accept: "application/json",
+      },
+      body: JSON.stringify({
+        amount: amountInPaise,
+        currency: "INR",
+        accept_partial: false,
+        reference_id: String(transactionId || orderId).slice(0, 40),
+        description: `Order ${orderId}`,
+        customer: {
+          name: String(name || "Customer").slice(0, 50),
+          email: String(email || "customer@suryaenter.in").slice(0, 50),
+          contact: String(mobile || "9876543210").slice(0, 15),
+        },
+        notify: { sms: false, email: false, whatsapp: false },
+        upi_link: isLive,
+      }),
+    });
+
+    if (plinkRes.ok) {
+      const plinkData = await plinkRes.json();
+      if (plinkData.short_url) {
+        checkoutUrl = plinkData.short_url;
+        paymentLinkId = plinkData.id;
+      }
+    }
+  } catch (_) {
+    // Keep fallback hosted checkout URL
+  }
+
+  // PayU and Razorpay operate 100% dynamically without requiring any static UPI ID (VPA).
+  // If no custom VPA is specified, it uses Razorpay's verified dynamic payment link session.
+  const activeVpa = (merchantVpa && String(merchantVpa).trim() && !String(merchantVpa).includes("rxairtel"))
+    ? String(merchantVpa).trim()
+    : null;
+
+  const upiDeepLink = activeVpa
+    ? `upi://pay?pa=${activeVpa}&pn=Surya%20Enterprises&am=${numericAmount.toFixed(2)}&cu=INR&tr=${data.id}&tn=${encodeURIComponent(String(transactionId || ""))}`
+    : checkoutUrl;
 
   return {
     orderId: data.id,
     paymentId: data.id,
+    paymentLinkId,
     txnId: transactionId,
     intentUri: upiDeepLink,
     checkoutUrl,
