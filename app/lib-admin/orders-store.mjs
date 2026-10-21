@@ -45,12 +45,14 @@ export function createOrdersStore(db, gatewayDb, products, { now = () => new Dat
     const selected = ops?.productSnapshot || matcher.match(order.subtotal, order.transactionId || order.orderId, ops?.productSku);
     const customer = order.customer || {};
     const delivery = ops?.customerAddress || {};
-    const paidAt = order.paidAt || order.__paidAt || order.updatedAt || order.createdAt;
+    const provider = String(order.provider || (order.razorpayOrderId || String(order.razorpayPaymentId || "").startsWith("order_") || String(order.transactionId || "").startsWith("SP") && order.razorpayOrderId ? "razorpay" : order.phonepeTransactionId ? "phonepe" : "payu")).toLowerCase();
     const row = {
       id: String(order._id), orderId: order.orderId, externalOrderId: gateway?.orderId || null,
       transactionId: order.transactionId || order.payuTxnId || order.razorpayOrderId || order.phonepeTransactionId || null,
       paymentId: order.payuPaymentId || order.razorpayPaymentId || order.phonepeTransactionId || order.transactionId || order.orderId,
       utr: order.payuBankRefNum || order.utr || order.rrn || null,
+      provider,
+      paymentMethod: order.paymentMethod || `${provider}_dynamic_qr`,
       amount: order.subtotal, currency: "INR", paymentStatus: "paid", paidAt: iso(paidAt), createdAt: iso(order.createdAt),
       dateBasis: order.paidAt ? "payment_confirmed" : "record_updated", providerPaidAt: iso(gateway?.paidAt),
       source: gateway ? "gateway" : "storefront", gatewayStatus: gateway?.status || null, callbackStatus: gateway?.callbackStatus || null,

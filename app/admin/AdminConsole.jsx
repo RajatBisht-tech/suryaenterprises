@@ -146,7 +146,7 @@ function CollectionsChart({ series }) {
       {[0, 0.5, 1].map((fraction) => { const y = top + plotHeight * (1 - fraction); return <g key={fraction}><line x1={left} x2={width - right} y1={y} y2={y} className={styles.chartGrid} /><text x={left - 12} y={y + 4} textAnchor="end" className={styles.chartTick}>{fraction === 0 ? "₹0" : `₹${compactFormatter.format(scaleMax * fraction)}`}</text></g>; })}
       {points.map((day, index) => { const x = left + step * (index + 0.5), barHeight = (Number(day.amount || 0) / scaleMax) * plotHeight; return <g key={day.date}><rect x={x - barWidth / 2} y={top + plotHeight - Math.max(barHeight, 1)} width={barWidth} height={Math.max(barHeight, 1)} rx="3" className={styles.chartBar}><title>{dateLabel(day.date)}: {money(day.amount)} · {count(day.count)} payments</title></rect><text x={x} y={height - 10} textAnchor="middle" className={styles.chartTick}>{dateLabel(day.date)}</text></g>; })}
     </svg></div> : <div className={styles.chartEmpty}><BarChart3 size={26} /><p>No collection history available yet.</p></div>}
-    <div className={styles.chartLegend}><span /><span>Confirmed PayU collections</span></div>
+    <div className={styles.chartLegend}><span /><span>Confirmed collections</span></div>
   </section>;
 }
 
@@ -381,7 +381,7 @@ export default function AdminConsole() {
         {error && <div className={styles.errorBanner} role="alert"><TriangleAlert size={19} /><div><strong>{data ? "Records couldn’t be refreshed" : "Your records couldn’t be loaded"}</strong><p>{error}{data && " Your last loaded records are still shown below."}</p></div><button className={styles.secondaryButton} onClick={() => loadDashboard()} disabled={loading}>Try again</button></div>}
         {!data ? loading ? <DashboardSkeleton /> : <div className={styles.initialEmpty}><BarChart3 size={32} /><p>Load your collection records to get started.</p><button className={styles.primaryButton} onClick={() => loadDashboard()}>Load records</button></div> : <div className={`${styles.dataContent} ${loading ? styles.refreshing : ""}`}>
           <section className={styles.kpiStrip} aria-label="Collection summary">
-            <div className={`${styles.kpi} ${styles.primaryKpi}`}><div className={styles.kpiLabel}><span>Collected payments</span><span className={styles.kpiIcon}>₹</span></div><strong>{money(summary?.collectedAmount)}</strong><p><CheckCircle2 size={12} />Confirmed PayU collections</p></div>
+            <div className={`${styles.kpi} ${styles.primaryKpi}`}><div className={styles.kpiLabel}><span>Collected payments</span><span className={styles.kpiIcon}>₹</span></div><strong>{money(summary?.collectedAmount)}</strong><p><CheckCircle2 size={12} />Confirmed collections</p></div>
             <div className={styles.kpi}><div className={styles.kpiLabel}><span>Payments received</span><ShoppingBag size={16} /></div><strong>{count(summary?.paymentCount)}</strong><p>Successful collections in this period</p></div>
             <div className={styles.kpi}><div className={styles.kpiLabel}><span>Average payment</span><BarChart3 size={16} /></div><strong>{money(summary?.averagePayment)}</strong><p>Per confirmed payment</p></div>
             <div className={`${styles.kpi} ${styles.confirmationKpi}`}><div className={styles.kpiLabel}><span>Product confirmation</span><span className={styles.yellowDot} /></div><strong>{count(awaiting)}<small>awaiting</small></strong><p>{awaiting ? <button onClick={() => { setView("orders"); changeStatus("unassigned"); }}>Review products <ArrowRight size={12} /></button> : "No product confirmations pending"}</p></div>
@@ -548,7 +548,22 @@ function OrderDrawer({ initialOrder, onClose, onChange, onUnauthorized }) {
       {success && <div className={styles.drawerSuccess} role="status"><CheckCircle2 size={16} />{success}</div>}
       <OrderTimeline order={order} loading={loading} />
       <section className={styles.detailSection}><h3>Payment references</h3><dl className={styles.referenceList}>
-        {[{ label: "Payment ID", value: order.paymentId }, { label: "PayU transaction ID", value: order.transactionId }, { label: "Merchant order ID", value: order.externalOrderId || order.orderId }, { label: "UTR", value: order.utr }].map(({ label, value }) => <div key={label}><dt>{label}</dt><dd><code>{value || "Not recorded"}</code>{value && <IconButton label={`Copy ${label}`} onClick={() => copy(value, label)}>{copied === label ? <Check size={13} /> : <Copy size={13} />}</IconButton>}</dd></div>)}
+        {(() => {
+          const rawProvider = String(order.provider || (
+            String(order.paymentId || "").startsWith("order_") || String(order.paymentId || "").startsWith("pay_") ? "razorpay" :
+            String(order.transactionId || "").startsWith("T") || String(order.phonepeTransactionId || "").length > 0 ? "phonepe" : "payu"
+          )).toLowerCase();
+          const providerName = rawProvider === "razorpay" ? "Razorpay" : rawProvider === "phonepe" ? "PhonePe" : rawProvider === "payu" ? "PayU" : "Gateway";
+          const txnLabel = `${providerName} transaction ID`;
+
+          return [
+            { label: "Payment ID", value: order.paymentId },
+            { label: txnLabel, value: order.transactionId },
+            { label: "Merchant order ID", value: order.externalOrderId || order.orderId },
+            { label: "UTR", value: order.utr },
+            { label: "Payment Gateway", value: providerName },
+          ].map(({ label, value }) => <div key={label}><dt>{label}</dt><dd><code>{value || "Not recorded"}</code>{value && <IconButton label={`Copy ${label}`} onClick={() => copy(value, label)}>{copied === label ? <Check size={13} /> : <Copy size={13} />}</IconButton>}</dd></div>);
+        })()}
         <div><dt>{order.dateBasis === "record_updated" ? "Record last updated" : order.paidAt ? "Paid at" : "Record created"}</dt><dd>{timestamp(order.paidAt || order.createdAt)} IST</dd></div><div><dt>Payment source</dt><dd>{order.source === "storefront" ? "Storefront checkout" : "Payment gateway"}</dd></div>
       </dl>{order.dateBasis === "record_updated" && <p className={styles.fieldHint}>The first payment confirmation time wasn’t saved. This date and period use the historical record’s update timestamp.</p>}</section>
       <section className={styles.detailSection}><h3>Customer & delivery</h3><div className={styles.buyerCard}><strong>{order.customer?.name || "Customer name not recorded"}</strong><div className={styles.buyerContact}><span className={styles.maskedMobile}>{maskedMobile(order.customer?.phone) || "Mobile not recorded"}</span>{order.customer?.email ? order.customer.email.includes("*") ? <span>{order.customer.email}</span> : <a href={`mailto:${order.customer.email}`}>{order.customer.email}</a> : <span>Email not recorded</span>}</div>{address ? <address>{address}</address> : <div className={styles.missingAddress}><TriangleAlert size={15} /><div><strong>Delivery address not recorded</strong><p>Collect and verify the customer’s address before shipping.</p></div></div>}</div>

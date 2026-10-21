@@ -443,26 +443,26 @@ export function verifyPayUCallbackHash(
   if (process.env.PAYU_KEY && !saltOverride && data.key !== PAYU_KEY) return false;
 
   const rawHash = [
-        activeSalt,
-        data.status || "",
-        ...(data.splitInfo ? [data.splitInfo] : []),
-        "",
-        "",
-        "",
-        "",
-        "",
-        data.udf5 || "",
-        data.udf4 || "",
-        data.udf3 || "",
-        data.udf2 || "",
-        data.udf1 || "",
-        data.email || "",
-        data.firstname || "",
-        data.productinfo || "",
-        data.amount || "",
-        data.txnid || "",
-        data.key || PAYU_KEY,
-      ].join("|");
+    activeSalt,
+    data.status || "",
+    ...(data.splitInfo ? [data.splitInfo] : []),
+    "",
+    "",
+    "",
+    "",
+    "",
+    data.udf5 || "",
+    data.udf4 || "",
+    data.udf3 || "",
+    data.udf2 || "",
+    data.udf1 || "",
+    data.email || "",
+    data.firstname || "",
+    data.productinfo || "",
+    data.amount || "",
+    data.txnid || "",
+    data.key || PAYU_KEY,
+  ].join("|");
   const charges = data.additionalCharges ?? data.additional_charges;
   const expected = sha512(charges ? `${charges}|${rawHash}` : rawHash);
 
