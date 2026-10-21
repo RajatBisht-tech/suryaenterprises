@@ -111,14 +111,15 @@ export async function createRazorpayIntent({
     // Keep fallback hosted checkout URL
   }
 
-  // PayU and Razorpay operate 100% dynamically without requiring any static UPI ID (VPA).
-  // If no custom VPA is specified, it uses Razorpay's verified dynamic payment link session.
-  const activeVpa = (merchantVpa && String(merchantVpa).trim() && !String(merchantVpa).includes("rxairtel"))
-    ? String(merchantVpa).trim()
-    : null;
+  const resolvedVpa =
+    (merchantVpa && String(merchantVpa).trim()) ||
+    (process.env.RAZORPAY_MERCHANT_VPA && String(process.env.RAZORPAY_MERCHANT_VPA).trim()) ||
+    "suryaenterprise391259.rzp@rxairtel";
+
+  const activeVpa = resolvedVpa && String(resolvedVpa).trim() ? String(resolvedVpa).trim() : null;
 
   const upiDeepLink = activeVpa
-    ? `upi://pay?pa=${activeVpa}&pn=Surya%20Enterprises&am=${numericAmount.toFixed(2)}&cu=INR&tr=${data.id}&tn=${encodeURIComponent(String(transactionId || ""))}`
+    ? `upi://pay?pa=${activeVpa}&pn=Surya%20Enterprises&am=${numericAmount.toFixed(2)}&cu=INR&tr=${data.id}&tn=${encodeURIComponent(String(transactionId || orderId || "Order Payment"))}`
     : checkoutUrl;
 
   return {
