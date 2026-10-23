@@ -16,6 +16,12 @@ export async function POST(request) {
     if (!Array.isArray(body?.items) || body.items.length === 0) {
       return NextResponse.json({ status: "error", error: "Refresh checkout and select products before paying." }, { status: 400 });
     }
+
+    const provider = String(body?.provider || "").toLowerCase().trim();
+    if (provider !== "payu" && provider !== "razorpay" && provider !== "phonepe") {
+      return NextResponse.json({ status: "error", error: "Choose PayU, Razorpay, or PhonePe before continuing." }, { status: 400 });
+    }
+
     const internalRequest = new Request(request.url, {
       method: "POST",
       headers: {
@@ -24,7 +30,7 @@ export async function POST(request) {
         "x-forwarded-for": request.headers.get("x-forwarded-for") || "",
         "user-agent": request.headers.get("user-agent") || "",
       },
-      body: JSON.stringify(body),
+      body: JSON.stringify({ ...body, provider }),
     });
     return await createPayInOrder(internalRequest);
   } catch (error) {

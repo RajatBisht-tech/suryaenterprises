@@ -2,25 +2,66 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { useState } from "react";
+import { useState, useSyncExternalStore } from "react";
 import { getProduct, formatINR } from "../products/data/products";
-import { ArrowLeft, ChevronDown, CircleCheckBig, Lock, Phone, ShieldCheck, ShoppingBag, Smartphone } from "lucide-react";
+import { ArrowLeft, ChevronDown, CircleCheckBig, CreditCard, Lock, Phone, ShieldCheck, ShoppingBag, Smartphone } from "lucide-react";
 import CheckoutHeader, { PaymentStatus } from "../components/shop/CheckoutHeader";
 import ProductImage from "../components/shop/ProductImage";
 import PaymentPartners from "../components/shop/PaymentPartners";
 import { SITE, telHref } from "../config/site";
 import { useCheckoutAccount } from "../lib-account/use-checkout-account";
 
+const EMPTY_CART = {};
+let cachedCartValue = null;
+let cachedCart = EMPTY_CART;
+
 function readCart() {
-  if (typeof window === "undefined") return {};
+  if (typeof window === "undefined") return EMPTY_CART;
 
   const savedCart = window.localStorage.getItem("surya-cart");
 
+  if (savedCart === cachedCartValue) return cachedCart;
+
+  cachedCartValue = savedCart;
+
   try {
-    return savedCart ? JSON.parse(savedCart) : {};
+    cachedCart = savedCart ? JSON.parse(savedCart) : EMPTY_CART;
   } catch {
-    return {};
+    cachedCart = EMPTY_CART;
   }
+
+  return cachedCart;
+}
+
+function subscribeToCart(onStoreChange) {
+  window.addEventListener("surya-cart-updated", onStoreChange);
+  window.addEventListener("storage", onStoreChange);
+
+  return () => {
+    window.removeEventListener("surya-cart-updated", onStoreChange);
+    window.removeEventListener("storage", onStoreChange);
+  };
+}
+
+function loadRazorpayCheckout() {
+  if (window.Razorpay) return Promise.resolve();
+
+  return new Promise((resolve, reject) => {
+    const existing = document.getElementById("razorpay-checkout-js");
+    if (existing) {
+      existing.addEventListener("load", resolve, { once: true });
+      existing.addEventListener("error", () => reject(new Error("Unable to load Razorpay Checkout.")), { once: true });
+      return;
+    }
+
+    const script = document.createElement("script");
+    script.id = "razorpay-checkout-js";
+    script.src = "https://checkout.razorpay.com/v1/checkout.js";
+    script.async = true;
+    script.onload = resolve;
+    script.onerror = () => reject(new Error("Unable to load Razorpay Checkout."));
+    document.body.appendChild(script);
+  });
 }
 
 const initialDetails = {
@@ -37,13 +78,17 @@ const initialDetails = {
 };
 
 export default function CheckoutPage() {
-  const [cart] = useState(readCart);
+  // useSyncExternalStore renders the empty server snapshot during hydration,
+  // then reads the persisted cart in the browser without mismatched markup.
+  const cart = useSyncExternalStore(subscribeToCart, readCart, () => EMPTY_CART);
   const [details, setDetails] = useState(initialDetails);
 
   const [orderPlaced, setOrderPlaced] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [paymentProvider, setPaymentProvider] = useState("");
 
-  // PayU payment information
+  // The selected gateway returns a payment link/UPI intent and is checked by
+  // the same Pay-In status endpoint.
   const [payment, setPayment] = useState(null);
   const [paymentMessage, setPaymentMessage] = useState("");
   const [paymentChecking, setPaymentChecking] = useState(false);
@@ -72,14 +117,73 @@ export default function CheckoutPage() {
     }));
   };
 
+  const openRazorpayCheckout = async (paymentData) => {
+    const razorpayOrderId = paymentData?.razorpay_order_id;
+    const razorpayKey = paymentData?.razorpay_key;
+    if (!razorpayOrderId || !razorpayKey) {
+      throw new Error("Razorpay checkout details were not returned.");
+    }
+
+    await loadRazorpayCheckout();
+    if (!window.Razorpay) {
+      throw new Error("Razorpay Checkout is unavailable. Please try again.");
+    }
+
+    const razorpay = new window.Razorpay({
+      key: razorpayKey,
+      amount: Math.round(Number(paymentData.amount) * 100),
+      currency: paymentData.currency || "INR",
+      name: "Surya Enterprises",
+      description: "Order payment",
+      order_id: razorpayOrderId,
+      prefill: {
+        name: `${details.firstName} ${details.lastName}`.trim(),
+        email: details.email.trim(),
+        contact: details.phone.trim(),
+      },
+      notes: { surya_order_id: paymentData.order_id },
+      theme: { color: "#15803d" },
+      handler: async (razorpayResponse) => {
+        try {
+          const response = await fetch("/api/payin/razorpay-callback", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(razorpayResponse),
+          });
+          const result = await response.json();
+          if (!response.ok || !result.success) {
+            throw new Error(result.error || "Razorpay payment verification failed.");
+          }
+
+          window.localStorage.removeItem("surya-cart");
+          window.dispatchEvent(new Event("surya-cart-updated"));
+          setPayment(null);
+          setOrderPlaced(true);
+        } catch (error) {
+          console.error("Razorpay verification error:", error);
+          alert(error.message || "Your payment could not be verified. Please contact support with your order ID.");
+        }
+      },
+      modal: {
+        ondismiss: () => setPayment(null),
+      },
+    });
+
+    razorpay.open();
+  };
+
   // --------------------------------------------------
-  // CREATE PAYU PAYMENT
+  // CREATE PAYMENT
   // --------------------------------------------------
 
   const placeOrder = async (event) => {
     event.preventDefault();
 
     if (cartItems.length === 0 || isLoading) {
+      return;
+    }
+
+    if (!paymentProvider) {
       return;
     }
 
@@ -101,6 +205,7 @@ export default function CheckoutPage() {
 
           body: JSON.stringify({
             amount: Number(subtotal),
+            provider: paymentProvider,
 
             items: cartItems.map(item => ({ sku: item.product.sku, quantity: item.quantity })),
             shipping: { address: details.address, apartment: details.apartment, city: details.city, state: details.state, pinCode: details.pinCode, notes: details.notes },
@@ -129,16 +234,59 @@ export default function CheckoutPage() {
 
       const data = await response.json();
 
-      console.log("PayU create response:", data);
+      console.log("Payment create response:", data);
 
       if (!response.ok || data.status !== "success") {
         throw new Error(
           data.error ||
+          data.message ||
           "Unable to create payment"
         );
       }
 
-      // The API returns the UPI intent as qr_string (and deep_link);
+      // Identify Razorpay from the signed server response as well as the UI
+      // selection. Razorpay Standard Checkout returns an order ID/key, not a
+      // QR or deep link, so it must never reach the PayU link validation.
+      const isRazorpayCheckout =
+        paymentProvider === "razorpay" ||
+        data.data?.provider === "razorpay" ||
+        Boolean(data.data?.razorpay_order_id);
+
+      if (isRazorpayCheckout) {
+        // Routed gateway payments return our stable hosted link. It keeps the
+        // selected channel host (for example localhost:3000) and then safely
+        // redirects the customer to Razorpay's official checkout page.
+        if (data.data?.payment_link) {
+          window.location.assign(data.data.payment_link);
+          return;
+        }
+
+        // Direct storefront Razorpay orders still use Standard Checkout.
+        setPayment(data.data);
+        await openRazorpayCheckout(data.data);
+        return;
+      }
+
+      const isPhonePeCheckout =
+        paymentProvider === "phonepe" ||
+        data.data?.provider === "phonepe";
+
+      if (isPhonePeCheckout) {
+        const phonePeCheckoutUrl =
+          data.data?.intent_data ||
+          data.data?.deep_link ||
+          data.data?.upi_intent ||
+          data.data?.qr_string;
+
+        if (!phonePeCheckoutUrl) {
+          throw new Error("PhonePe did not return a checkout URL.");
+        }
+
+        window.location.assign(phonePeCheckoutUrl);
+        return;
+      }
+
+      // The PayU API returns the UPI intent as qr_string (and deep_link);
       // accept either so older/newer responses both work.
       const qrString =
         data.data?.qr_string ||
@@ -147,7 +295,7 @@ export default function CheckoutPage() {
 
       if (!qrString) {
         throw new Error(
-          "PayU did not return a payment QR."
+          "The payment provider did not return a payment link."
         );
       }
 
@@ -358,6 +506,9 @@ export default function CheckoutPage() {
   // --------------------------------------------------
 
   if (payment) {
+    const selectedProvider = payment.provider === "razorpay" ? "razorpay" : "payu";
+    const providerName = selectedProvider === "razorpay" ? "Razorpay" : "PayU";
+    const paymentLink = payment.intent_data || payment.qr_string;
     const qrUrl =
       `https://api.qrserver.com/v1/create-qr-code/` +
       `?size=320x320&margin=12&data=${encodeURIComponent(
@@ -376,7 +527,7 @@ export default function CheckoutPage() {
             >
               {/* Header */}
               <p className="eyebrow text-brand">
-                Secure UPI Payment
+                Secure payment via {providerName}
               </p>
 
               <h1 id="pay-title" className="mt-1 font-display text-[24px] font-extrabold leading-tight text-ink sm:text-[28px]">
@@ -384,8 +535,9 @@ export default function CheckoutPage() {
               </h1>
 
               <p className="mt-2 text-[14px] text-ink-2">
-                Scan the QR code using any supported
-                UPI app and approve the payment.
+                {selectedProvider === "razorpay"
+                  ? "Continue to Razorpay, then choose UPI, card, netbanking, or another available method."
+                  : "Scan the QR code using any supported UPI app and approve the payment."}
               </p>
 
               {/* Amount */}
@@ -407,7 +559,7 @@ export default function CheckoutPage() {
                 <span aria-hidden="true" className="absolute -bottom-px -right-px h-6 w-6 rounded-br-xl border-b-[3px] border-r-[3px] border-brand" />
                 <Image
                   src={qrUrl}
-                  alt="UPI payment QR code"
+                  alt={`${providerName} payment QR code`}
                   width={320}
                   height={320}
                   unoptimized
@@ -423,14 +575,18 @@ export default function CheckoutPage() {
                 </span>
               </p>
 
-              {/* Open UPI App */}
-              {payment.qr_string && (
+              {/* Continue in the provider checkout. */}
+              {paymentLink && (
                 <a
-                  href={payment.qr_string}
+                  href={paymentLink}
                   className="btn btn-cart mt-5 h-11 w-full sm:w-auto sm:px-8"
                 >
-                  <Smartphone className="h-4 w-4" strokeWidth={1.75} aria-hidden="true" />
-                  Open UPI app
+                  {selectedProvider === "razorpay" ? (
+                    <CreditCard className="h-4 w-4" strokeWidth={1.75} aria-hidden="true" />
+                  ) : (
+                    <Smartphone className="h-4 w-4" strokeWidth={1.75} aria-hidden="true" />
+                  )}
+                  {selectedProvider === "razorpay" ? "Continue to Razorpay" : "Open UPI app"}
                 </a>
               )}
 
@@ -453,7 +609,7 @@ export default function CheckoutPage() {
 
               <p className="mt-5 text-xs text-ink-3">
                 Payment status is confirmed by Surya
-                Enterprises using PayU. Do not close this
+                Enterprises using {providerName}. Do not close this
                 page until your payment is confirmed.
               </p>
 
@@ -478,7 +634,24 @@ export default function CheckoutPage() {
                   How to pay
                 </p>
 
-                <ol className="mt-3 space-y-3 text-[13px] text-ink-2">
+                {selectedProvider === "razorpay" ? (
+                  <ol className="mt-3 space-y-3 text-[13px] text-ink-2">
+                    {[
+                      "Tap Continue to Razorpay to open Razorpay's secure checkout.",
+                      "Choose UPI, card, netbanking, or another payment method offered by Razorpay.",
+                      "Complete the payment on Razorpay's hosted page.",
+                      "Return here and tap I have paid — check payment.",
+                    ].map((text, i) => (
+                      <li key={text} className="flex gap-3">
+                        <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-brand-tint text-[11px] font-bold tabular-nums text-brand">
+                          {i + 1}
+                        </span>
+                        <span>{text}</span>
+                      </li>
+                    ))}
+                  </ol>
+                ) : (
+                  <ol className="mt-3 space-y-3 text-[13px] text-ink-2">
                   {[
                     "Open Google Pay, PhonePe, Paytm or another supported UPI app.",
                     "Scan the QR code, or tap “Open UPI app” on this phone.",
@@ -492,12 +665,37 @@ export default function CheckoutPage() {
                       <span>{text}</span>
                     </li>
                   ))}
-                </ol>
+                  </ol>
+                )}
               </div>
 
               <PaymentPartners />
 
-              <ul className="space-y-2.5 rounded-lg border border-line bg-white p-5 text-[13px] text-ink-2">
+              {selectedProvider === "razorpay" && (
+                <ul className="space-y-2.5 rounded-lg border border-line bg-white p-5 text-[13px] text-ink-2">
+                  <li className="flex gap-2.5">
+                    <Lock className="mt-0.5 h-4 w-4 shrink-0 text-brand" strokeWidth={1.75} aria-hidden="true" />
+                    Razorpay securely processes your payment on its hosted checkout page.
+                  </li>
+                  <li className="flex gap-2.5">
+                    <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-brand" strokeWidth={1.75} aria-hidden="true" />
+                    Card, bank, and UPI details are entered only on Razorpay and are never stored by Surya Enterprises.
+                  </li>
+                  <li className="flex gap-2.5">
+                    <Phone className="mt-0.5 h-4 w-4 shrink-0 text-brand" strokeWidth={1.75} aria-hidden="true" />
+                    <span>
+                      Stuck? Call{" "}
+                      <a href={telHref} className="font-semibold text-brand hover:underline">
+                        {SITE.helpline.display}
+                      </a>{" "}
+                      with your order ID.
+                    </span>
+                  </li>
+                </ul>
+              )}
+
+              {selectedProvider !== "razorpay" && (
+                <ul className="space-y-2.5 rounded-lg border border-line bg-white p-5 text-[13px] text-ink-2">
                 <li className="flex gap-2.5">
                   <Lock className="mt-0.5 h-4 w-4 shrink-0 text-brand" strokeWidth={1.75} aria-hidden="true" />
                   Your UPI PIN is entered only in your UPI app — never on this site.
@@ -516,7 +714,8 @@ export default function CheckoutPage() {
                     with your order ID.
                   </span>
                 </li>
-              </ul>
+                </ul>
+              )}
             </aside>
           </div>
         </main>
@@ -639,13 +838,15 @@ export default function CheckoutPage() {
 
                   <p className="flex items-center gap-2 text-[13px] font-semibold text-ink">
                     <Smartphone className="h-4 w-4 text-brand" strokeWidth={1.75} aria-hidden="true" />
-                    Pay with UPI via PayU
+                    {paymentProvider === "razorpay" ? "Pay securely via Razorpay" : paymentProvider === "phonepe" ? "Pay securely via PhonePe" : paymentProvider === "payu" ? "Pay with UPI via PayU" : "Choose a payment gateway"}
                   </p>
 
                   <p className="mt-1 text-xs leading-relaxed text-ink-2">
-                    Pay securely using UPI. After
-                    placing your order, a secure UPI
-                    payment QR code will appear.
+                    {paymentProvider === "razorpay"
+                      ? "Razorpay will offer the payment methods available for your order."
+                      : paymentProvider === "phonepe"
+                        ? "PhonePe will open its secure checkout to complete your payment."
+                        : "Select PayU, Razorpay, or PhonePe below before proceeding to payment."}
                   </p>
                   <PaymentPartners compact className="mt-3" />
                 </div>
@@ -678,14 +879,17 @@ export default function CheckoutPage() {
                   type="submit"
                   disabled={
                     cartItems.length === 0 ||
-                    isLoading
+                    isLoading ||
+                    !paymentProvider
                   }
                   data-testid="place-order-btn"
                   className="btn btn-buy h-12 flex-1 text-[15px] lg:w-full"
                 >
                   {isLoading
                     ? "Creating Payment..."
-                    : `Pay ${formatINR(subtotal)}`}
+                    : paymentProvider
+                      ? `Pay ${formatINR(subtotal)} with ${paymentProvider === "razorpay" ? "Razorpay" : paymentProvider === "phonepe" ? "PhonePe" : "PayU"}`
+                      : "Choose a payment method"}
                 </button>
               </div>
             </div>
@@ -757,6 +961,68 @@ export default function CheckoutPage() {
                         autoComplete="email"
                         className="input"
                       />
+                    </label>
+                  </div>
+                </fieldset>
+
+                <fieldset className="mt-6 border-t border-line pt-5">
+                  <legend className="mb-3 text-[12px] font-bold uppercase tracking-wider text-ink-2">
+                    Payment method
+                  </legend>
+                  <p className="mb-3 text-[13px] text-ink-2">
+                    Select a secure payment gateway to continue.
+                  </p>
+
+                  <div className="grid gap-3 sm:grid-cols-3">
+                    <label className={`cursor-pointer rounded-lg border p-4 transition-colors ${paymentProvider === "payu" ? "border-brand bg-brand-tint/40 ring-1 ring-brand" : "border-line bg-white hover:border-brand/50"}`}>
+                      <input
+                        required
+                        type="radio"
+                        name="paymentProvider"
+                        value="payu"
+                        checked={paymentProvider === "payu"}
+                        onChange={(event) => setPaymentProvider(event.target.value)}
+                        className="sr-only"
+                      />
+                      <span className="flex items-center gap-2 text-sm font-bold text-ink">
+                        <Smartphone className="h-4 w-4 text-brand" strokeWidth={1.75} aria-hidden="true" />
+                        PayU
+                      </span>
+                      <span className="mt-1 block text-xs leading-relaxed text-ink-2">Pay by UPI with a secure QR code or UPI app.</span>
+                    </label>
+
+                    <label className={`cursor-pointer rounded-lg border p-4 transition-colors ${paymentProvider === "razorpay" ? "border-brand bg-brand-tint/40 ring-1 ring-brand" : "border-line bg-white hover:border-brand/50"}`}>
+                      <input
+                        required
+                        type="radio"
+                        name="paymentProvider"
+                        value="razorpay"
+                        checked={paymentProvider === "razorpay"}
+                        onChange={(event) => setPaymentProvider(event.target.value)}
+                        className="sr-only"
+                      />
+                      <span className="flex items-center gap-2 text-sm font-bold text-ink">
+                        <CreditCard className="h-4 w-4 text-brand" strokeWidth={1.75} aria-hidden="true" />
+                        Razorpay
+                      </span>
+                      <span className="mt-1 block text-xs leading-relaxed text-ink-2">Continue to Razorpay to choose an available payment method.</span>
+                    </label>
+
+                    <label className={`cursor-pointer rounded-lg border p-4 transition-colors ${paymentProvider === "phonepe" ? "border-brand bg-brand-tint/40 ring-1 ring-brand" : "border-line bg-white hover:border-brand/50"}`}>
+                      <input
+                        required
+                        type="radio"
+                        name="paymentProvider"
+                        value="phonepe"
+                        checked={paymentProvider === "phonepe"}
+                        onChange={(event) => setPaymentProvider(event.target.value)}
+                        className="sr-only"
+                      />
+                      <span className="flex items-center gap-2 text-sm font-bold text-ink">
+                        <Smartphone className="h-4 w-4 text-brand" strokeWidth={1.75} aria-hidden="true" />
+                        PhonePe
+                      </span>
+                      <span className="mt-1 block text-xs leading-relaxed text-ink-2">Continue to PhonePe&apos;s secure checkout to pay.</span>
                     </label>
                   </div>
                 </fieldset>

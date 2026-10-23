@@ -3,7 +3,9 @@ import crypto from "crypto";
 const RAZORPAY_API_BASE = "https://api.razorpay.com/v1";
 
 /**
- * Creates a Razorpay Order and returns checkout & UPI details
+ * Creates a Razorpay order plus a customer-facing Razorpay Payment Link.
+ * The Payment Link is deliberately used for links shared outside the
+ * storefront: it opens Razorpay directly without needing our page's SDK.
  */
 export async function createRazorpayIntent({
   key,
@@ -72,69 +74,47 @@ export async function createRazorpayIntent({
     throw error;
   }
 
-  let checkoutUrl = `https://api.razorpay.com/v1/checkout/hosted?order_id=${data.id}`;
-  let paymentLinkId = null;
-  const isLive = String(key).startsWith("rzp_live");
-
-  try {
-    const plinkRes = await fetch(`${RAZORPAY_API_BASE}/payment_links`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: authHeader,
-        Accept: "application/json",
+  const paymentLinkResponse = await fetch(`${RAZORPAY_API_BASE}/payment_links`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: authHeader,
+      Accept: "application/json",
+    },
+    body: JSON.stringify({
+      amount: amountInPaise,
+      currency: "INR",
+      accept_partial: false,
+      reference_id: String(transactionId || orderId).slice(0, 40),
+      description: `Order ${String(orderId || transactionId)}`,
+      customer: {
+        name: String(name || "Customer").slice(0, 50),
+        email: String(email || "").slice(0, 50),
+        contact: String(mobile || "").slice(0, 15),
       },
-      body: JSON.stringify({
-        amount: amountInPaise,
-        currency: "INR",
-        accept_partial: false,
-        reference_id: String(transactionId || orderId).slice(0, 40),
-        description: `Order ${orderId}`,
-        customer: {
-          name: String(name || "Customer").slice(0, 50),
-          email: String(email || "customer@suryaenter.in").slice(0, 50),
-          contact: String(mobile || "9876543210").slice(0, 15),
-        },
-        notify: { sms: false, email: false, whatsapp: false },
-        upi_link: isLive,
-      }),
-    });
+      notify: { sms: false, email: false, whatsapp: false },
+    }),
+  });
 
-    if (plinkRes.ok) {
-      const plinkData = await plinkRes.json();
-      if (plinkData.short_url) {
-        checkoutUrl = plinkData.short_url;
-        paymentLinkId = plinkData.id;
-      }
-    }
-  } catch (_) {
-    // Keep fallback hosted checkout URL
+  const paymentLinkPayload = await paymentLinkResponse.json().catch(() => ({}));
+  if (!paymentLinkResponse.ok || !paymentLinkPayload.short_url) {
+    const error = new Error(
+      paymentLinkPayload?.error?.description ||
+      paymentLinkPayload?.message ||
+      `Razorpay payment link creation failed (HTTP ${paymentLinkResponse.status})`
+    );
+    error.statusCode = paymentLinkResponse.status;
+    error.providerResponse = paymentLinkPayload;
+    throw error;
   }
-
-  const resolvedVpa =
-    (merchantVpa && String(merchantVpa).trim()) ||
-    (process.env.RAZORPAY_MERCHANT_VPA && String(process.env.RAZORPAY_MERCHANT_VPA).trim()) ||
-    null;
-
-  const activeVpa = resolvedVpa && String(resolvedVpa).trim() ? String(resolvedVpa).trim() : null;
-
-  // Only use raw UPI string if an authentic merchant VPA is explicitly provided.
-  // Otherwise, use Razorpay's official checkout URL (rzp.io) which generates
-  // a certified, live bank-authorized QR code.
-  const upiDeepLink = activeVpa
-    ? `upi://pay?pa=${activeVpa}&pn=Surya%20Enterprises&am=${numericAmount.toFixed(2)}&cu=INR&tr=${data.id}&tn=${encodeURIComponent(String(transactionId || orderId || "Order Payment"))}`
-    : checkoutUrl;
 
   return {
     orderId: data.id,
-    paymentId: data.id,
-    paymentLinkId,
     txnId: transactionId,
-    intentUri: upiDeepLink,
-    checkoutUrl,
-    merchantVpa: activeVpa,
     merchantName: "Surya Enterprises",
-    raw: data,
+    paymentLinkId: paymentLinkPayload.id,
+    checkoutUrl: paymentLinkPayload.short_url,
+    raw: { order: data, paymentLink: paymentLinkPayload },
   };
 }
 

@@ -58,6 +58,7 @@ export async function POST(request) {
       provider = "payu",
       gateway_key,
       gateway_salt,
+      gateway_credential_provider,
       merchant_vpa,
     } = body;
 
@@ -149,6 +150,12 @@ export async function POST(request) {
     const callbackUrl =
       `${baseUrl}/api/payin/payu-callback`;
 
+    const reqProvider = String(provider || "payu").toLowerCase().trim();
+    const credentialProvider = String(gateway_credential_provider || "").toLowerCase().trim();
+    const hasCompatibleGatewayCredentials = !credentialProvider || credentialProvider === reqProvider;
+    const configuredGatewayKey = hasCompatibleGatewayCredentials ? gateway_key : undefined;
+    const configuredGatewaySalt = hasCompatibleGatewayCredentials ? gateway_salt : undefined;
+
     // ---------------------------------
     // 10. Create local order
     // ---------------------------------
@@ -175,16 +182,14 @@ export async function POST(request) {
 
       provider: String(provider || "payu").toLowerCase().trim(),
 
-      gatewayKey: gateway_key || null,
+      gatewayKey: configuredGatewayKey || null,
 
-      gatewaySalt: gateway_salt || null,
+      gatewaySalt: configuredGatewaySalt || null,
 
       // IMPORTANT:
       // No redirectUrl for internal Surya checkout.
       redirectUrl: null,
     });
-
-    const reqProvider = String(provider || "payu").toLowerCase().trim();
 
     // ---------------------------------
     // 11. Create Gateway Payment
@@ -213,8 +218,8 @@ export async function POST(request) {
 
       if (reqProvider === "razorpay") {
         const rzp = await createRazorpayIntent({
-          key: gateway_key || process.env.RAZORPAY_KEY,
-          salt: gateway_salt || process.env.RAZORPAY_SECRET,
+          key: configuredGatewayKey || process.env.RAZORPAY_KEY,
+          salt: configuredGatewaySalt || process.env.RAZORPAY_SECRET,
           amount: numericAmount,
           transactionId,
           orderId: finalOrderId,
@@ -226,41 +231,41 @@ export async function POST(request) {
         });
 
         order.razorpayOrderId = rzp.orderId;
-        order.razorpayPaymentId = rzp.paymentId;
-        order.upiIntent = rzp.intentUri;
-        order.upiString = rzp.intentUri;
-        order.gatewayKey = gateway_key || process.env.RAZORPAY_KEY;
-        order.gatewaySalt = gateway_salt || process.env.RAZORPAY_SECRET;
+        order.razorpayPaymentLinkId = rzp.paymentLinkId;
+        order.gatewayKey = configuredGatewayKey || process.env.RAZORPAY_KEY;
+        order.gatewaySalt = configuredGatewaySalt || process.env.RAZORPAY_SECRET;
         order.razorpayResponse = rzp.raw;
         await order.save();
 
         paymentResult = {
           paymentId: rzp.orderId,
-          merchantVpa: rzp.merchantVpa,
           merchantName: rzp.merchantName,
-          deepLink: rzp.intentUri,
-          intentData: rzp.checkoutUrl,
+          razorpayOrderId: rzp.orderId,
+          razorpayKey: configuredGatewayKey || process.env.RAZORPAY_KEY,
+          checkoutUrl: rzp.checkoutUrl,
         };
       } else if (reqProvider === "phonepe") {
         const phonepe = await createPhonePeIntent({
-          merchantId: gateway_key || process.env.PHONEPE_MERCHANT_ID,
-          saltKey: gateway_salt || process.env.PHONEPE_SALT_KEY,
+          merchantId: configuredGatewayKey || process.env.PHONEPE_MERCHANT_ID,
+          saltKey: configuredGatewaySalt || process.env.PHONEPE_SALT_KEY,
           saltIndex: 1,
           amount: numericAmount,
           transactionId,
           customerPhone: customerMobile,
-          redirectUrl: `${baseUrl}/pay/${transactionId}`,
+          // PhonePe must return to the public Payin transaction. `transactionId`
+          // is Surya's internal SP... id and has no hosted page in Payin-Backend.
+          redirectUrl: `${baseUrl}/pay/${finalOrderId}`,
           callbackUrl: `${baseUrl}/api/payin/phonepe-callback`,
           merchantVpa: merchant_vpa,
           isProduction: String(process.env.PHONEPE_ENV || "").toLowerCase() === "production",
         });
 
         order.phonepeTransactionId = phonepe.paymentId;
-        order.phonepeMerchantId = gateway_key || process.env.PHONEPE_MERCHANT_ID;
+        order.phonepeMerchantId = configuredGatewayKey || process.env.PHONEPE_MERCHANT_ID;
         order.upiIntent = phonepe.intentUri;
         order.upiString = phonepe.intentUri;
-        order.gatewayKey = gateway_key || process.env.PHONEPE_MERCHANT_ID;
-        order.gatewaySalt = gateway_salt || process.env.PHONEPE_SALT_KEY;
+        order.gatewayKey = configuredGatewayKey || process.env.PHONEPE_MERCHANT_ID;
+        order.gatewaySalt = configuredGatewaySalt || process.env.PHONEPE_SALT_KEY;
         order.phonepeResponse = phonepe.raw;
         await order.save();
 
@@ -285,8 +290,8 @@ export async function POST(request) {
           clientIp,
           deviceInfo: userAgent,
           udf1: finalOrderId,
-          key: gateway_key,
-          salt: gateway_salt,
+          key: configuredGatewayKey,
+          salt: configuredGatewaySalt,
         });
 
         order.payuTxnId = payu.txnId;
@@ -294,8 +299,8 @@ export async function POST(request) {
         order.payuMerchantVpa = payu.merchantVpa;
         order.payuQrString = payu.intentUri;
         order.upiIntent = payu.intentUri;
-        order.payuKey = gateway_key || process.env.PAYU_KEY;
-        order.payuSalt = gateway_salt || process.env.PAYU_SALT;
+        order.payuKey = configuredGatewayKey || process.env.PAYU_KEY;
+        order.payuSalt = configuredGatewaySalt || process.env.PAYU_SALT;
         order.payuResponse = payu.raw;
         await order.save();
 
@@ -329,7 +334,10 @@ export async function POST(request) {
           deep_link: paymentResult.deepLink,
           upi_intent: paymentResult.deepLink,
           qr_string: paymentResult.deepLink,
-          intent_data: paymentResult.intentData,
+          intent_data: paymentResult.intentData || paymentResult.checkoutUrl,
+          checkout_url: paymentResult.checkoutUrl || null,
+          razorpay_order_id: paymentResult.razorpayOrderId || null,
+          razorpay_key: paymentResult.razorpayKey || null,
           expires_in: expiry,
         },
         error: null,

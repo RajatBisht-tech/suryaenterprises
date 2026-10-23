@@ -121,7 +121,9 @@ export async function POST(request) {
     order.paymentStatus = "paid";
     order.paidAt = new Date();
     if (rzpPaymentId) order.razorpayPaymentId = rzpPaymentId;
-    if (signature) order.razorpaySignature = signature;
+    if (bodyData.razorpay_signature || signature) {
+      order.razorpaySignature = bodyData.razorpay_signature || signature;
+    }
     const utr =
       paymentEntity?.acquirer_data?.rrn ||
       paymentEntity?.acquirer_data?.bank_transaction_id ||

@@ -32,6 +32,7 @@ const OrderSchema = new mongoose.Schema(
     upiIntent: String,
     upiString: String,
     razorpayOrderId: String,
+    razorpayPaymentLinkId: String,
     razorpayPaymentId: String,
     razorpaySignature: String,
     razorpayResponse: mongoose.Schema.Types.Mixed,
