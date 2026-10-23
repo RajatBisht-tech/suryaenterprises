@@ -6,6 +6,10 @@ on:
       - 'main'
   workflow_dispatch:
 
+concurrency:
+  group: deploy-surya-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -22,7 +26,9 @@ jobs:
 
       - name: npm install, build, and test
         env:
-          MONGO_URL: ${{ secrets.MONGO_URL }}
+          # Fallback ensures next build NEVER throws even if GitHub Secret is blank
+          MONGO_URL: ${{ secrets.MONGO_URL || 'mongodb://127.0.0.1:27017/surya' }}
+          NEXT_TELEMETRY_DISABLED: 1
         run: |
           npm install
           npm run build --if-present
@@ -30,11 +36,11 @@ jobs:
 
       - name: Prepare standalone release bundle
         run: |
-          # Copy public and static assets into the standalone directory
-          cp -r public .next/standalone/ || true
+          # Copy public and static assets directly into the standalone folder
+          cp -r public .next/standalone/ 2>/dev/null || true
           cp -r .next/static .next/standalone/.next/
           
-          # Zip only the standalone bundle
+          # Package standalone root into release.zip
           cd .next/standalone
           zip -r ../../release.zip .
           cd ../..
