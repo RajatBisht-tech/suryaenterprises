@@ -252,9 +252,8 @@ export async function POST(request) {
           amount: numericAmount,
           transactionId,
           customerPhone: customerMobile,
-          // PhonePe must return to the public Payin transaction. `transactionId`
-          // is Surya's internal SP... id and has no hosted page in Payin-Backend.
-          redirectUrl: `${baseUrl}/pay/${finalOrderId}`,
+          // The Pay-In backend owns the hosted page lookup by transaction ID.
+          redirectUrl: `${baseUrl}/pay/${transactionId}`,
           callbackUrl: `${baseUrl}/api/payin/phonepe-callback`,
           merchantVpa: merchant_vpa,
           isProduction: String(process.env.PHONEPE_ENV || "").toLowerCase() === "production",

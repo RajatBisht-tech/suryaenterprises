@@ -1,6 +1,12 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "regions": ["bom1"],
+  "rewrites": [
+    {
+      "source": "/pay/:path*",
+      "destination": "https://api.haryvion.in/pay/:path*"
+    }
+  ],
   "functions": {
     "app/api/queues/payment-recovery/route.js": {
       "experimentalTriggers": [{ "type": "queue/v2beta", "topic": "payin-recovery", "retryAfterSeconds": 5 }]
