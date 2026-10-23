@@ -2,6 +2,7 @@ import { gatewayRewrites } from "./deployment-config.mjs";
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  output: "standalone",
   poweredByHeader: false,
   // Keep the complete reference archive in Git without copying development
   // inputs into production server functions.
